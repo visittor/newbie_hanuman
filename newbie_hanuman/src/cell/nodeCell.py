@@ -14,8 +14,9 @@ class NodeBase(object):
 	def __init__(self, nodeName, anonymous = True):
 		self.__nameSpace = rospy.get_namespace()
 		self.__nodeName = nodeName
-		self.__verbosity = rospy.get_param(self.__nameSpace+"/global_verbosity","debug").lower()
-		self.__frequency = rospy.get_param(self.__nameSpace+"/global_frequency",60)
+		self.__verbosity = rospy.get_param(self.__nameSpace+"global_verbosity","debug").lower()
+		self.__frequency = rospy.get_param(self.__nameSpace+"global_frequency",60)
+		self.__queue_size = rospy.get_param(self.__nameSpace+"global_queue_size", 1)
 		self.__anonymous = anonymous
 
 	def setFrequency(self, hz):
@@ -32,11 +33,13 @@ class NodeBase(object):
 		else:
 			return rospy.get_param(param, defualt)
 
-	def rosInitPublisher(self, name, msg, queue_size = 10):
+	def rosInitPublisher(self, name, msg, queue_size = None):
+		queue_size = self.__queue_size if queue_size is None else queue_size
 		self.__ros_pub = rospy.Publisher(name, msg, queue_size = queue_size)
 
-	def rosInitSubscriber(self, name, msg, callback,queue_size = 10):
-		rospy.Subscriber(name, msg, callback, queue_size=10)
+	def rosInitSubscriber(self, name, msg, callback,queue_size = None, buff_size = 65536):
+		queue_size = self.__queue_size if queue_size is None else queue_size
+		rospy.Subscriber(name, msg, callback, queue_size=10, buff_size = buff_size)
 
 	def rosInitService(self, name, service, handle):
 		rospy.Service(name, service, handle)
@@ -52,6 +55,9 @@ class NodeBase(object):
 
 	def sleep(self):
 		self.__rate.sleep()
+
+	def spin(self):
+		rospy.spin()
 
 	@property
 	def nameSpace(self):
