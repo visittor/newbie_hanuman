@@ -6,7 +6,7 @@ import rospy
 class RobotisProtocol(SpinalCordBase):
 	'''
 		Parent class : spinalCord.SpinalCordBase.SpinalCordBase
-		Attribute
+		Static Attribute
 			PING 			register for ping.
 			READ_DATA		register for read data.
 			WRITE_DATA		register for write data.

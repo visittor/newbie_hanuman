@@ -8,7 +8,10 @@ import rospy
 import roslib
 
 from sensor_msgs.msg import JointState
-from testframework.srv import PanTiltService
+
+from newbie_hanuman.srv import PanTiltService,PanTiltServiceResponse
+from newbie_hanuman.msg import PanTiltCommand
+
 from cell.nodeCell import NodeBase
 
 import serial
@@ -21,11 +24,22 @@ STRING_TO_CLASS_MOTOR_SERIES = {	"ax12a"	:	AX12A,
 									"rx28"	:	RX28
 								}
 
+PLUS = 0
+SET_GOAL_POS = 1
+
 ##############################
 ##		Helper function		##
 ##############################
-def getJsPosFromName(Js, name):
-	return Js.position[Js.name.index(name)]
+def getJsPosFromName(Js, name, latestState):
+	indexJs = Js.name.index(name)
+	indexState = latestState.name.index(name)
+	if Js.command[indexJs] == PLUS:
+		return latestState.position[indexState] + Js.position[indexJs]
+	elif Js.command[indexJs] == SET_GOAL_POS:
+		return Js.position[indexJs]
+	else:
+		rospy.logwarn("Cannot understand command recieve from PanTiltCommand.")
+		return latestState.position[indexState]
 
 def getJsVelFromName(Js, name):
 	return Js.velocity[Js.name.index(name)]
@@ -39,15 +53,6 @@ class Sternocleidomastoid(NodeBase):
 
 	def __init__(self):
 		super(Sternocleidomastoid, self).__init__("sternocleidomastoid")
-		# self.__nameSpace = rospy.get_namespace()
-
-		# self.__panMotorID = rospy.get_param(self.__nameSpace+'/spinalcord/pan_motor_id', 41)
-		# self.__tiltMotorID = rospy.get_param(self.__nameSpace+'/spinalcord/tilt_motor_id', 42)
-		
-		# self.__comPort = rospy.get_param(self.__nameSpace+'/spinalcord/head_comport', "/dev/tty/USB0")
-		# self.__baudrate = rospy.get_param(self.__nameSpace+'/spinalcord/head_baurdrate', 115200)
-		# self.__rts = rospy.get_param(self.__nameSpace+'/spinalcord/head_rts', 1)
-		# self.__dtr = rospy.get_param(self.__nameSpace+'/spinalcord/head_dtr', 1)
 		self.__panMotorID = self.getParam(self.nameSpace+'spinalcord/pan_motor_id', 41)
 		self.__tiltMotorID = self.getParam(self.nameSpace+'spinalcord/tilt_motor_id', 42)
 		
@@ -93,6 +98,13 @@ class Sternocleidomastoid(NodeBase):
 		self.__initServos()
 		self.__rosInitSubPubSer()
 
+	def set_serialParam(self, comport=None, baudrate=None, rts=None, dtr=None):
+		self.__comPort = str(comport) if comport is not None else self.__comPort
+		self.__baudrate = int(baudrate) if baudrate is not None else self.__baudrate
+		self.__rts = rts if rts is not None else self.__rts
+		self.__dtr = dtr if dtr is not None else self.__dtr
+		self.__connectSerialPort()
+
 	def __connectSerialPort(self):
 		if self.__serial.is_open:
 			self.__serial.close()
@@ -110,13 +122,6 @@ class Sternocleidomastoid(NodeBase):
 			rospy.logwarn("Serial port for head ("+str(self.__comPort)+") not be opened.")
 		else:
 			rospy.loginfo("Connected to "+str(self.__comPort)+".")
-
-	def set_serialParam(self, comport=None, baudrate=None, rts=None, dtr=None):
-		self.__comPort = str(comport) if comport is not None else self.__comPort
-		self.__baudrate = int(baudrate) if baudrate is not None else self.__baudrate
-		self.__rts = rts if rts is not None else self.__rts
-		self.__dtr = dtr if dtr is not None else self.__dtr
-		self.__connectSerialPort()
 
 	def __initServos(self):
 		self.__pingMotor()
@@ -139,16 +144,17 @@ class Sternocleidomastoid(NodeBase):
 							position=	[0,0],
 							velocity=	[0,0],
 							effort  =	[retPan, retTilt])
-		self.__stateQueue.put(js)
+		self.__lastestState = js
+		# self.__stateQueue.put(js)
 
 	def __rosInitNode(self):
-		rospy.init_node("sternocleidomastoid", anonymous = True, log_level=rospy.DEBUG)
+		self.rosInitNode()
 
 	def __rosInitSubPubSer(self):
 		self.rosInitSubscriber(	"/spinalcord/sternocleidomastoid_command", 
-								JointState,
+								PanTiltCommand,
 								self.callback,
-								queue_size = 10)
+								queue_size = 1)
 		self.rosInitPublisher(	'/spinalcord/sternocleidomastoid_position',
 								JointState,
 								queue_size = 10)
@@ -158,13 +164,14 @@ class Sternocleidomastoid(NodeBase):
 
 	def handleService(self, req):
 		js = self.__lastestState
-		return PanTiltService(js)
+		# response = PanTiltService(js)
+		return PanTiltServiceResponse(js)
 
 	def callback(self, msg):
-		panPosition = getJsPosFromName(msg, "pan")
+		panPosition = getJsPosFromName(msg, "pan", self.__lastestState)
 		rospy.logdebug(str(panPosition))
 		panSpeed = getJsVelFromName(msg, "pan")
-		tiltPosition = getJsPosFromName(msg, "tilt")
+		tiltPosition = getJsPosFromName(msg, "tilt", self.__lastestState)
 		rospy.logdebug(str(tiltPosition))
 		tiltSpeed = getJsVelFromName(msg, "tilt")
 		retPan = 0 if self.__panMotor.moveFromRad_REGACTION(panPosition, panSpeed) is None else 1
@@ -185,13 +192,17 @@ class Sternocleidomastoid(NodeBase):
 						effort  =	effort)
 		self.__stateQueue.put(js)
 
+	def __stampMessage(self):
+		self.__lastestState.header.stamp = rospy.Time.now()
+
 	def run(self):
 		rospy.loginfo("Start sternocleidomastoid node.")
 		while not rospy.is_shutdown():
 			if not self.__stateQueue.empty():
 				self.__lastestState = self.__stateQueue.get()
-				self.publish(self.__lastestState)
 				self.__stateQueue.task_done()
+			self.__stampMessage()
+			self.publish(self.__lastestState)
 			self.sleep()
 		rospy.loginfo("Close sternocleidomastoid node.")
 

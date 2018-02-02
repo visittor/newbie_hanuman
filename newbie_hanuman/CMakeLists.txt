@@ -52,6 +52,7 @@ catkin_python_setup()
 add_message_files(
   FILES
   msgForBlissFace.msg
+  PanTiltCommand.msg
   # Message2.msg
 )
 
@@ -167,6 +168,7 @@ install(PROGRAMS
   bin/CranialNerveIIMonitor
   bin/Sternocleidomastoid
   bin/OccipitalLobe
+  bin/KinematicBrain
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
