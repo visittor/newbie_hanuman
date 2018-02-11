@@ -1,3 +1,6 @@
 talker1/
 #
 *.pyc
+*.png
+*.npz
+*.zip
