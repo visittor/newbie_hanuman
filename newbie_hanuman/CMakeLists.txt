@@ -60,6 +60,8 @@ add_message_files(
 add_service_files(
   FILES
   PanTiltService.srv
+  MotorCortexCommand.srv
+  reqMotorCortexIntegration.srv
   # Service2.srv
 )
 
@@ -169,6 +171,7 @@ install(PROGRAMS
   bin/Sternocleidomastoid
   bin/OccipitalLobe
   bin/KinematicBrain
+  bin/MotorCortex
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

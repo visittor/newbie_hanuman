@@ -32,11 +32,26 @@ RegisterNames = [
 				]
 
 RegisterAddrDict = {}
-for address in range( 0, len( gRegisterNames ) ):
-	RegisterAddrDict[ gRegisterNames[address] ] = address
+for address in range( 0, len( RegisterNames ) ):
+	RegisterAddrDict[ RegisterNames[address] ] = address
 	
 # Locomotion Controller ID
 LocomotionControllerID = 1
+
+# constant mask/value for locomotion status
+TiltStatusMask = 0x0003
+TiltStatus_Normal = 0
+TiltStatus_FallDown_FaceDown = 1
+TiltStatus_FallDown_FaceUp = 2
+
+# command buttons mask for locomotion status
+CommandButtonsMask = 0xFF00
+CommandButtonsShiftBits = 8
+CommandButtonsStartBitMask = 0x4000
+CommandButtonsStopBitMask = 0x8000
+
+CommandButtonsModeSelectorBitMask = 0x0F00
+CommandButtonsModeSelectorShiftBits = 8
 
 class HanumanProtocol(RobotisProtocol):
 
@@ -46,6 +61,17 @@ class HanumanProtocol(RobotisProtocol):
 
 	def __init__(self, serial):
 		super(HanumanProtocol, self).__init__(serial)
+		self.__robotStatus = None
+
+	def read_AllLowLevelData(self, timeout = None):
+		numB = len(RegisterNames)
+		robotStatus = self.readRegister(
+								LocomotionControllerID, 
+								RegisterAddrDict["REG_FIRMWARE_VERSION_L"], 
+								numB,
+								timeout = timeout)
+		# print "robotStatus", robotStatus
+		self.__robotStatus = self.__get_robotStatusData(robotStatus)
 
 	def get_locomotion_command(self, timeout = None):
 		return self.readRegister(	LocomotionControllerID, 
@@ -126,3 +152,22 @@ class HanumanProtocol(RobotisProtocol):
 								RegisterAddrDict["REG_MAGNETO_X_L"],
 								6,
 								timeout = timeout)
+
+	def get_locomotionStatus(self):
+		index = RegisterAddrDict["REG_LOCOMOTION_STATUS_L"]
+		# print "robotStatus",self.__robotStatus
+		if self.__robotStatus is None:
+			return
+		elif len(self.__robotStatus) != len(RegisterNames):
+			return
+		return self.__robotStatus[index] | (self.__robotStatus[index+1]<<8) 
+
+	def __get_robotStatusData(self, robotStatus):
+		nB = len(RegisterNames)
+		if robotStatus is None:
+			return
+		if len(robotStatus) >= 6+nB:
+			robotStatus = robotStatus[5:-1]
+			return robotStatus
+		else:
+			return None

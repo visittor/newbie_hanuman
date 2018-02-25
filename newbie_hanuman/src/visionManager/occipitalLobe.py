@@ -9,6 +9,7 @@ from std_msgs.msg import Header
 
 from cell.nodeCell import NodeBase
 from brain.visionModule import VisionModule
+from utility.utility import load_module
 
 import inspect
 import os
@@ -116,30 +117,13 @@ class OccipitalLobe(NodeBase):
 		self.__cap.release()
 		rospy.loginfo("Close OccipitalLobe node.")
 
-def load_occipital_lobe(fileName):
-	# open file
-	fileObj = file( fileName )
-
-	# create new module
-	moduleName = '.'.join( os.path.abspath( fileName ).split( '.' )[:-1] )
-	newModule = imp.new_module( moduleName )
-	
-	# execute fileData in this environment
-	oldSysPath = sys.path
-	sys.path = [ os.path.dirname( os.path.abspath(fileName) ) ] + sys.path
-	exec fileObj in newModule.__dict__
-	sys.path = oldSysPath
-	
-	#	return new module
-	return newModule
-
 def main():
 	fileName = rospy.get_param("/vision_manager/vision_module_path", '')
 	if fileName == '':
 		module = VisionModule()
 	else:
 		print "get module"
-		lobe_module = load_occipital_lobe(fileName)
+		lobe_module = load_module(fileName)
 		assert hasattr( lobe_module, 'vision_module' )
 		module = lobe_module.vision_module
 

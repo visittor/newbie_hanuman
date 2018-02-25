@@ -34,6 +34,7 @@ def getJsPosFromName(Js, name, latestState):
 	indexJs = Js.name.index(name)
 	indexState = latestState.name.index(name)
 	if Js.command[indexJs] == PLUS:
+		# print Js.position[indexJs]
 		return latestState.position[indexState] + Js.position[indexJs]
 	elif Js.command[indexJs] == SET_GOAL_POS:
 		return Js.position[indexJs]
@@ -57,7 +58,7 @@ class Sternocleidomastoid(NodeBase):
 		self.__tiltMotorID = self.getParam(self.nameSpace+'spinalcord/tilt_motor_id', 42)
 		
 		self.__comPort = self.getParam(self.nameSpace+'spinalcord/head_comport', "/dev/ttyUSB0")
-		self.__baudrate = self.getParam(self.nameSpace+'/spinalcord/head_baurdrate', 115200)
+		self.__baudrate = self.getParam(self.nameSpace+'spinalcord/head_baurdrate', 115200)
 		self.__rts = self.getParam(self.nameSpace+'spinalcord/head_rts', 1)
 		self.__dtr = self.getParam(self.nameSpace+'spinalcord/head_dtr', 1)
 		self.rosInitNode()
@@ -76,7 +77,7 @@ class Sternocleidomastoid(NodeBase):
 		self.__panDirection = self.getParam(self.nameSpace+'spinalcord/pan_direction', 1)
 		self.__tiltDirection = self.getParam(self.nameSpace+'spinalcord/tilt_direction', 1)
 
-		self.__timeout = self.getParam(self.nameSpace+'spinalcord/head_serial_timeout',0.1)
+		self.__timeout = self.getParam(self.nameSpace+'spinalcord/timeout',0.1)
 
 		self.__panMotor = self.__panMotorSeries(	self.__serial, 
 													self.__panMotorID,
@@ -119,7 +120,7 @@ class Sternocleidomastoid(NodeBase):
 			rospy.logwarn(str(e))
 		time.sleep(0.0002)
 		if not self.__serial.is_open:
-			rospy.logwarn("Serial port for head ("+str(self.__comPort)+") not be opened.")
+			rospy.logwarn("Serial port for head ("+str(self.__comPort)+") cannot be opened.")
 		else:
 			rospy.loginfo("Connected to "+str(self.__comPort)+".")
 
@@ -178,7 +179,7 @@ class Sternocleidomastoid(NodeBase):
 		retTilt = 0 if self.__tiltMotor.moveFromRad_REGACTION(tiltPosition, tiltSpeed) is None else 1
 
 		self.__panMotor.broadcastingAction()
-
+		print panPosition
 		self.__putMessageToQueue(panPosition, panSpeed, tiltPosition, tiltSpeed, retPan, retTilt)
 
 	def __putMessageToQueue(self, panPos, panSpd, tiltPs, tiltSp, retPan, retTil):

@@ -24,10 +24,12 @@ def read_data(serial):
 			pass
 			# rospy.logwarn("Serial port is not open.")
 		elif serial.is_open:
+			# print serial.inWaiting()
 			while serial.inWaiting():
 				PACKAGE.append(ord(serial.read()))
 			if len(PACKAGE) > 0:
-				rospy.logdebug("RECIEVE<< "+str(PACKAGE))
+				# rospy.logdebug("RECIEVE<< "+str(PACKAGE))
+				rospy.logdebug(str(len(PACKAGE)))
 	except Exception as e:
 		rospy.logerr("cannot recieve data from serial port"+str(e))
 	finally:
@@ -42,6 +44,7 @@ def write_data(serial, PACKAGE):
 		Return
 			bool 		indicate whether sending data succesful or not.
 	'''
+	PACKAGE = map(int, PACKAGE)
 	if serial is None:
 		return False
 	try: 
@@ -57,6 +60,7 @@ def write_data(serial, PACKAGE):
 			rospy.logdebug("SEND>> "+str(PACKAGE))
 			return True
 	except Exception as e:
+		rospy.logerr("From write data function.")
 		rospy.logerr(str(e))
 		rospy.logerr("Fail to send " + str(PACKAGE))
 		return False
@@ -136,10 +140,11 @@ class SpinalCordBase(object):
 			self.rawRecievingBuffer = []
 			self.RecievingBuffer = []
 		write_data(self.__serial, requestPackage)
-		time.sleep(0.002)
+		time.sleep(0.02)
 		if not self.__waitForResponse(timeout):
 			# rospy.logwarn("Cannot request data from "+str(self.__serial.port+"."))
 			return None
+		rospy.logdebug("Reciev Package<<"+str(self.RecievingBuffer[-1]))
 		return self.RecievingBuffer.pop(-1)
 
 	def __waitForResponse(self, timeout):
@@ -154,7 +159,7 @@ class SpinalCordBase(object):
 		while time.time() - start <= timeout:
 			self.readData()
 			if not self.findPackage():
-				time.sleep(0.002)
+				time.sleep(0.02)
 				continue
 			else:
 				return True
@@ -165,9 +170,10 @@ class SpinalCordBase(object):
 		while True:
 			self.readData()
 			if not self.findPackage():
-				time.sleep(0.002)
+				time.sleep(0.02)
 				continue
 			else:
+				rospy.logdebug("Find Package.")
 				break
 		return True
 
@@ -190,24 +196,29 @@ class SpinalCordBase(object):
 				if dataByte == 0xFF:
 					temp.append(dataByte)
 					state = stateEnum["H2"]
+					# rospy.logdebug("h1")
 				else:
 					temp = []
 			elif state == stateEnum["H2"]:
 				if dataByte == 0xFF:
 					temp.append(dataByte)
 					state = stateEnum["ID"]
+					# rospy.logdebug("h2")
 				else:
 					temp = []
 					state = stateEnum["H1"]
 			elif state == stateEnum["ID"]:
 				temp.append(dataByte)
 				state = stateEnum["L1"]
+				# rospy.logdebug("id")
 			elif state == stateEnum["L1"]:
 				temp.append(dataByte)
 				packLenght = dataByte
 				state = stateEnum["DA"]
+				# rospy.logdebug("l1")
 			elif state == stateEnum["DA"]:
 				temp.append(dataByte)
+				# rospy.logdebug("da")
 				packLenght -= 1
 				if packLenght == 0:
 					self.RecievingBuffer.append(temp)

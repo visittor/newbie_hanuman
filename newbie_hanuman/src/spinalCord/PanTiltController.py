@@ -14,16 +14,17 @@ name = ["pan", "tilt"]
 position = [0,0]
 velocity = [20,20]
 command = [0,0]
+ang = math.radians(10)
 def createCommand(k):
-	global name, position, velocity, command
+	global name, position, velocity, command, ang
 	if k == ord('p'):
-		position = [0,math.radians(5)]
+		position = [0,ang]
 	elif k == ord(';'):
-		position = [0,-math.radians(5)]
+		position = [0,-ang]
 	elif k == ord("l"):
-		position = [math.radians(5),0]
+		position = [ang,0]
 	elif k == ord("'"):
-		position = [-math.radians(5),0]
+		position = [-ang,0]
 	else:
 		position = [0,0]
 	c = PanTiltCommand(	name 		= name,

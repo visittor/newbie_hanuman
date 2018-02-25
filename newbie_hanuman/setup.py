@@ -7,7 +7,8 @@ setup_args = generate_distutils_setup(
 	packages=[	'cell',
 				'spinalCord',
 				'visionManager',
-				'brain'],
+				'brain',
+				'utility'],
 	package_dir={'': 'src'},
 )
 setup(**setup_args)

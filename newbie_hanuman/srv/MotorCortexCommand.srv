@@ -1,0 +1,11 @@
+int32 LOCOMOTIONCOMMAND = 0
+int32 SPECIALCOMMAND = 1
+
+float64 velX
+float64 velY
+float64 omgZ
+int32 commandType
+string command
+
+bool ignorable
+---

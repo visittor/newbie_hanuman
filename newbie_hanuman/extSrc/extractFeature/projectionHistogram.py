@@ -7,46 +7,19 @@ import os
 from random import shuffle
 
 IMAGE_SIZE = 50
-BLOCKSIZE = 10
-BLOCKSTRIBE = BLOCKSIZE/2
-CELLSIZE = 10
-NBINS = 9
-DERIVAPERTURE = 1
-WINSIGMA = -1.
-HISTOGRAMNORMTYPE = 0
-L2HYSTHRESHOLD = 0.2
-GAMMACORRECTION = 1
-NLEVELS = 64
-SINEDGRADIENTS = True
 
-DATA_SET_NAME = "HOGzerotwothree"
-FILENAME = "{}-imagesize-{}-block-{}-cell-{}-bin-{}-sined-{}"
+DATA_SET_NAME = "PHzerotwothree"
+FILENAME = "{}-imagesize-{}"
 FILENAME = FILENAME.format(	DATA_SET_NAME,
-							IMAGE_SIZE,
-							BLOCKSIZE,
-							CELLSIZE,
-							NBINS,
-							SINEDGRADIENTS)
+							IMAGE_SIZE)
 
-
-def createHOGDescription():
-	winSize = 			(IMAGE_SIZE,	IMAGE_SIZE)
-	blockSize = 		(BLOCKSIZE, 	BLOCKSIZE)
-	blockStride = 		(BLOCKSTRIBE, 	BLOCKSTRIBE)
-	cellSize = 			(CELLSIZE,		CELLSIZE)
-	nbins = 			NBINS
-	derivAperture = 	DERIVAPERTURE
-	winSigma = 			WINSIGMA
-	histogramNormType = HISTOGRAMNORMTYPE
-	L2HysThreshold = 	L2HYSTHRESHOLD
-	gammaCorrection = 	GAMMACORRECTION
-	nlevels = 			NLEVELS
-	signedGradients = 	SINEDGRADIENTS
-	 
-	hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,histogramNormType,L2HysThreshold,gammaCorrection,nlevels, signedGradients)
-
-	return hog
-
+def createProjectionHistogram(image):
+	v = np.sum(image, axis=0) / (image.shape[1])
+	h = np.sum(image, axis=1) / (image.shape[0])
+	features = np.hstack((v,h)).astype(np.float64)
+	# features = features / np.linalg.norm(features)
+	features = features / 255
+	return features
 
 if __name__ == "__main__":
 	ap = argparse.ArgumentParser()
@@ -62,8 +35,6 @@ if __name__ == "__main__":
 	datas = []
 	labels = []
 
-	hog = createHOGDescription()
-
 	for name in filesList:
 		assert name.split("_")[0].isdigit() == False
 		label = int(name.split("/")[-1].split("\\")[-1].split("_")[0])
@@ -75,8 +46,9 @@ if __name__ == "__main__":
 		for rows in cells:
 			for img in rows:
 				img = cv2.resize(img, (IMAGE_SIZE,IMAGE_SIZE))
-				feature = hog.compute(img).reshape(-1)
+				feature = createProjectionHistogram(img)
 				feature = np.hstack((feature,np.array([label],feature.dtype)))
+				# print feature.shape
 				datas.append(feature)
 
 	# shuffle(datas)
@@ -84,14 +56,14 @@ if __name__ == "__main__":
 	print datas[:,-1]
 	X = datas[:,:-1]
 	y = datas[:,-1]
-	print y
-
+	print 'y',y
+	print datas.shape
 	if args["save"]:
 		a = "-nimage-{}".format(len(datas))
 		FILENAME += a
 		np.savez(FILENAME+".npz", X=X, y=y)
 
-		header = ["hog"+str(i) for i in range(len(datas[0])-1)]
+		header = ["proHist"+str(i) for i in range(len(datas[0])-1)]
 		header.append("labels")
 		header = " ".join(header)
-		np.savetxt(FILENAME+".csv", datas, header = header, comments="")
+		np.savetxt(FILENAME+".csv", datas, header = header, comments = "")

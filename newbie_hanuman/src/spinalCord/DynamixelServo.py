@@ -32,6 +32,7 @@ class ServoBase(object):
 		self.__direction = 1 if Direction >= 0 else -1
 
 	def setAngleLimitRads(self, max_, min_):
+		print "PP",max_ - min_, self.__maxAngleSpan
 		assert abs(max_ - min_) <= self.__maxAngleSpan
 		assert max_ != min_
 		self.__maxAngleRads = max(max_, min_)

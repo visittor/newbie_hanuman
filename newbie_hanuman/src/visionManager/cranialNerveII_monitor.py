@@ -7,7 +7,7 @@ from message_filters import ApproximateTimeSynchronizer, Subscriber,TimeSynchron
 from sensor_msgs.msg import CompressedImage
 
 from cell.nodeCell import NodeBase
-from occipitalLobe import OccipitalLobeSetup
+# from occipitalLobe import 	
 
 import os
 import sys

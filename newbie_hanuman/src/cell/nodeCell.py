@@ -14,8 +14,8 @@ class NodeBase(object):
 	def __init__(self, nodeName, anonymous = True):
 		self.__nameSpace = rospy.get_namespace()
 		self.__nodeName = nodeName
-		self.__verbosity = rospy.get_param(self.__nameSpace+"global_verbosity","debug").lower()
-		self.__frequency = rospy.get_param(self.__nameSpace+"global_frequency",10)
+		self.__verbosity = rospy.get_param("/global_verbosity","debug").lower()
+		self.__frequency = rospy.get_param("/global_frequency",10)
 		self.__anonymous = anonymous
 
 	def setFrequency(self, hz):
