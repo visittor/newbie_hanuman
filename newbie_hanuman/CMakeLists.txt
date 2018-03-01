@@ -172,6 +172,7 @@ install(PROGRAMS
   bin/OccipitalLobe
   bin/KinematicBrain
   bin/MotorCortex
+  bin/HanumanController
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 import cv2
 import numpy as np
+import pandas as pd
+
 import argparse
 import glob
 import os
@@ -9,7 +11,7 @@ from random import shuffle
 IMAGE_SIZE = 50
 BLOCKSIZE = 10
 BLOCKSTRIBE = BLOCKSIZE/2
-CELLSIZE = 10
+CELLSIZE = BLOCKSIZE
 NBINS = 9
 DERIVAPERTURE = 1
 WINSIGMA = -1.
@@ -19,7 +21,7 @@ GAMMACORRECTION = 1
 NLEVELS = 64
 SINEDGRADIENTS = True
 
-DATA_SET_NAME = "HOGzerotwothree"
+DATA_SET_NAME = "HOGFull1Font"
 FILENAME = "{}-imagesize-{}-block-{}-cell-{}-bin-{}-sined-{}"
 FILENAME = FILENAME.format(	DATA_SET_NAME,
 							IMAGE_SIZE,
@@ -61,25 +63,26 @@ if __name__ == "__main__":
 	print filesList
 	datas = []
 	labels = []
-
+	index = []
 	hog = createHOGDescription()
 
 	for name in filesList:
-		assert name.split("_")[0].isdigit() == False
+		assert name.split("/")[-1].split("\\")[-1].split("_")[0].isdigit() == True
 		label = int(name.split("/")[-1].split("\\")[-1].split("_")[0])
+		label2 = int(name.split("/")[-1].split("\\")[-1].split("_")[-1].split(".")[0])
 		image = cv2.imread(name,0)
 		assert image is not None
 
 		cells = [np.hsplit(row,50) for row in np.vsplit(image,10)]
 		# print cells
-		for rows in cells:
-			for img in rows:
+		for i,rows in enumerate(cells):
+			for j,img in enumerate(rows):
 				img = cv2.resize(img, (IMAGE_SIZE,IMAGE_SIZE))
 				feature = hog.compute(img).reshape(-1)
 				feature = np.hstack((feature,np.array([label],feature.dtype)))
+				index.append(name.split("/")[-1].split("\\")[-1].split(".")[0]+str(i)+str(j))
 				datas.append(feature)
 
-	# shuffle(datas)
 	datas = np.array(datas)
 	print datas[:,-1]
 	X = datas[:,:-1]
@@ -90,8 +93,15 @@ if __name__ == "__main__":
 		a = "-nimage-{}".format(len(datas))
 		FILENAME += a
 		np.savez(FILENAME+".npz", X=X, y=y)
-
-		header = ["hog"+str(i) for i in range(len(datas[0])-1)]
-		header.append("labels")
-		header = " ".join(header)
-		np.savetxt(FILENAME+".csv", datas, header = header, comments="")
+		col = "hog"+str(BLOCKSIZE)+"_"
+		header = [col+str(i) for i in range(len(datas[0])-1)]
+		header.append("Class")
+		print len(header)
+		# header = " ".join(header)
+		df = pd.DataFrame(	data = datas,
+							index = index,
+							columns = header)
+		df.to_csv(	FILENAME+".csv",
+					sep = "\t",
+					encoding= "utf-8")
+		# np.savetxt(FILENAME+".csv", datas, header = header, comments="")

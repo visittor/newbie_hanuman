@@ -9,3 +9,4 @@ string command
 
 bool ignorable
 ---
+bool ok

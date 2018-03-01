@@ -63,12 +63,8 @@ class CommandQueue(object):
 		if self.__commandQueue.full():
 			self.__commandQueue.get()
 			self.__commandQueue.task_done()
-		# if command == self.__finalCommand:
-		# 	print command
-		# 	print self.__finalCommand
-		# 	print "Return --"
-		# 	return
-		print "Put command"
+		if command == self.__finalCommand:
+			return
 		self.__commandQueue.put( (timeStamp, command, ignorable) )
 		self.__finalCommand = command
 		self.__finalCommandTimeStamp = timeStamp
@@ -82,7 +78,8 @@ class CommandQueue(object):
 			currentTime = time.time()
 		while 1==1:
 			if self.__commandQueue.empty():
-				print "Queue is empty"
+				self.__finalCommand = None
+				self.__finalCommandTimeStamp = None
 				break
 			command = self.__commandQueue.get()
 			if 	self.__timeTolerance is None or currentTime - command[0] <= self.__timeTolerance or not command[2]:
@@ -142,6 +139,9 @@ class LocomotionSpecialCommand(object):
 	def __ne__(self, othr):
 		return not self.__eq__(othr)
 
+	def __str__(self):
+		return self.__command
+
 
 class HanumanInterface(object):
 
@@ -183,6 +183,9 @@ class HanumanInterface(object):
 		self.__startCommandPos = (0.0,0.0,0.0)
 		self.__currentPosition = (0.0,0.0,0.0)
 
+		self.__stopCommad = self.convertVelocityToRegister(	0.0, 
+															0.0, 
+															0.0)
 	@staticmethod
 	def convertLocomotionRegToWorld(regis, regisMax, regisMin, worldMax, worldMin):
 		return max( min( ((worldMax-worldMin)/(regisMax-regisMin))*(regis-regisMin)+worldMin, worldMax) , worldMin)
@@ -239,23 +242,26 @@ class HanumanInterface(object):
 		else:
 			raise LowLevelInterfaceException("Command is neither LocomotionSpecialCommand nor LocomotionSpecialCommand.")
 
+		# if actualCommand == self.__stopCommad:
+		# 	ignorable = False
+
 		finalCommand = self.__commandQueue.getFinalCommandInfo()
 		self.__filterCommand(actualCommand, finalCommand[0], timeStamp)
-		print finalCommand[0]
-		print actualCommand
+		# print finalCommand[0]
+		# print actualCommand
 
 		if timeStamp is None:
 			self.__commandQueue.add_command(time.time(), 
 											actualCommand, 
 											ignorable = ignorable)
 		else:
-			print "Should add command here"
+			# print "Should add command here"
 			self.__commandQueue.add_command(timeStamp, 
 											actualCommand,
 											ignorable = ignorable)
 
 	def forceStop(self, currentTime = None):
-		self.__nextCommand = LocomotionCommand(0.0, 0.0, 0.0)
+		self.__nextCommand = self.__stopCommad
 		self.__executeCommand()
 
 	def forceStandup(self, currentTime = None):
@@ -269,10 +275,10 @@ class HanumanInterface(object):
 
 		command = self.__commandQueue.get_command(currentTime)
 		self.__nextCommand = command[1] if command is not None else None
-		rospy.loginfo(str(self.__nextCommand))
 		self.__executeCommand()
 		if self.__nextCommand is not None:
 			self.__commandQueue.task_done()
+		rospy.loginfo("Do "+str(self.__nextCommand))
 
 	def clearIntegration(self):
 		self.__currentPosition = (0.0,0.0,0.0)
@@ -308,10 +314,12 @@ class HanumanInterface(object):
 		if self.__shouldStopBeforeDoCommand(command, finalCommand):
 			if timeStamp is None:
 				self.__commandQueue.add_command(time.time(),
-												LocomotionCommand(0.0,0.0,0.0))
+												self.__stopCommad,
+												ignorable = False)
 			else:
 				self.__commandQueue.add_command(timeStamp,
-												LocomotionCommand(0.0,0.0,0.0))
+												self.__stopCommad,
+												ignorable = False)
 			return
 
 	def __executeCommand(self):

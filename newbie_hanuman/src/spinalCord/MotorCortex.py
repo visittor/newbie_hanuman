@@ -33,7 +33,7 @@ class MotorCortex(NodeBase):
 
 		self.__timeout = self.getParam(	self.nameSpace+'motor_cortex/timeout',
 										0.1)
-		self.__timeTolerance = self.getParam(self.nameSpace+'motor_cortex/timeTolerance',20)
+		self.__timeTolerance = self.getParam(self.nameSpace+'motor_cortex/timeTolerance',1)
 
 		self.__comPort = self.getParam(self.nameSpace+'motor_cortex/comport','/dev/ttyACM0')
 		self.__baudrate = self.getParam(self.nameSpace+'motor_cortex/baudrate',
@@ -89,8 +89,7 @@ class MotorCortex(NodeBase):
 			rospy.loginfo("Connected to "+str(self.__comPort)+".")
 
 	def __initLocomotion(self):
-		stopCommand = LocomotionCommand(0.0, 0.0, 0.0)
-		self.__hanumanInterface.getCommand(stopCommand)
+		self.__hanumanInterface.forceStop()
 		self.__hanumanInterface.doCurrentCommand()
 		self.__hanumanInterface.clearIntegration()
 
@@ -103,17 +102,15 @@ class MotorCortex(NodeBase):
 						reqMotorCortexIntegration,
 						self.__reqIntegration)
 
-		self.setFrequency(1)
+		self.setFrequency(1.5)
 	def __receiveCommand(self, req):
 		if req.commandType == req.LOCOMOTIONCOMMAND:
 			vel_x = req.velX
 			vel_y = req.velY
 			omg_z = req.omgZ
 			command = LocomotionCommand(vel_x, vel_y, omg_z)
-			rospy.logdebug("RECIEVE COMMAND")
-			rospy.loginfo(str(command))
 			self.__hanumanInterface.getCommand(	command, 
-												time.time(),
+												timeStamp = time.time(),
 												ignorable= req.ignorable)
 
 		elif req.commandType == req.SPECIALCOMMAND:
@@ -123,7 +120,7 @@ class MotorCortex(NodeBase):
 												timeStamp=time.time(),
 												ignorable = req.ignorable)
 
-		return MotorCortexCommandResponse()
+		return MotorCortexCommandResponse(True)
 
 	def __reqIntegration(self, req):
 		if req.resetIntegration:
@@ -140,17 +137,17 @@ class MotorCortex(NodeBase):
 	def run(self):
 		rospy.loginfo("Start motor cortex node.")
 		while not rospy.is_shutdown():
-			# print "run"
 			if not self.__hanumanInterface.is_robotStanding():
 				rospy.loginfo("Robot fall down. Reset integration and force standup.")
+				# time.sleep(0.1)
 				self.__lastFallDown = rospy.Time.now()
 				self.__hanumanInterface.forceStandup()
 				self.__hanumanInterface.clearIntegration()
 				self.__lastResetIntegration = rospy.Time.now()
 			else:
+				# time.sleep(0.1)
 				rospy.loginfo("Do current command.")
 				self.__hanumanInterface.doCurrentCommand()
-			# print "run2"
 			self.sleep()
 		rospy.loginfo("Close motor cortex node.")
 
