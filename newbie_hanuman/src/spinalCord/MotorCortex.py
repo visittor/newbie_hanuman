@@ -6,6 +6,7 @@ import roslib
 
 from newbie_hanuman.srv import MotorCortexCommand,MotorCortexCommandResponse
 from newbie_hanuman.srv import reqMotorCortexIntegration, reqMotorCortexIntegrationResponse
+from newbie_hanuman.msg import HanumanStatusMsg
 
 from cell.nodeCell import NodeBase
 
@@ -94,6 +95,8 @@ class MotorCortex(NodeBase):
 		self.__hanumanInterface.clearIntegration()
 
 	def __rosInitSubPubSer(self):
+		self.rosInitPublisher(	"/spinalcord/hanuman_status",
+								HanumanStatusMsg)
 		self.rosInitService("motor_cortex_command", 
 							MotorCortexCommand,
 							self.__receiveCommand)
@@ -101,8 +104,8 @@ class MotorCortex(NodeBase):
 		rospy.Service(	"request_integration",
 						reqMotorCortexIntegration,
 						self.__reqIntegration)
+		self.setFrequency(5)
 
-		self.setFrequency(1.5)
 	def __receiveCommand(self, req):
 		if req.commandType == req.LOCOMOTIONCOMMAND:
 			vel_x = req.velX
@@ -134,10 +137,15 @@ class MotorCortex(NodeBase):
 							lastResetIntegration = self.__lastResetIntegration)
 		return response
 
+	def publish(self, status):
+		msg = HanumanStatusMsg( **status.statusDict )
+		super(MotorCortex, self).publish(msg)
+
 	def run(self):
 		rospy.loginfo("Start motor cortex node.")
 		while not rospy.is_shutdown():
-			if not self.__hanumanInterface.is_robotStanding():
+			hanumanStatus = self.__hanumanInterface.getHanumanStatus()
+			if hanumanStatus["backFallDown"] or hanumanStatus["fontFallDown"]:
 				rospy.loginfo("Robot fall down. Reset integration and force standup.")
 				# time.sleep(0.1)
 				self.__lastFallDown = rospy.Time.now()
@@ -148,6 +156,7 @@ class MotorCortex(NodeBase):
 				# time.sleep(0.1)
 				rospy.loginfo("Do current command.")
 				self.__hanumanInterface.doCurrentCommand()
+			self.publish(hanumanStatus)
 			self.sleep()
 		rospy.loginfo("Close motor cortex node.")
 

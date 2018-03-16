@@ -11,7 +11,7 @@ VERBOSITY_LEVEL = {	"debug"	:	rospy.DEBUG,
 
 class NodeBase(object):
 
-	def __init__(self, nodeName, anonymous = True):
+	def __init__(self, nodeName, anonymous = False):
 		self.__nameSpace = rospy.get_namespace()
 		self.__nodeName = nodeName
 		self.__verbosity = rospy.get_param("/global_verbosity","debug").lower()

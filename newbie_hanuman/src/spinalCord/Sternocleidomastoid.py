@@ -58,7 +58,7 @@ class Sternocleidomastoid(NodeBase):
 		self.__tiltMotorID = self.getParam(self.nameSpace+'spinalcord/tilt_motor_id', 42)
 		
 		self.__comPort = self.getParam(self.nameSpace+'spinalcord/head_comport', "/dev/ttyUSB0")
-		self.__baudrate = self.getParam(self.nameSpace+'spinalcord/head_baurdrate', 115200)
+		self.__baudrate = self.getParam(self.nameSpace+'spinalcord/head_baurdrate', 1000000)
 		self.__rts = self.getParam(self.nameSpace+'spinalcord/head_rts', 1)
 		self.__dtr = self.getParam(self.nameSpace+'spinalcord/head_dtr', 1)
 		self.rosInitNode()
@@ -72,7 +72,7 @@ class Sternocleidomastoid(NodeBase):
 		self.__panAngleMax = self.getParam(self.nameSpace+'spinalcord/pan_angle_max', math.radians(135.0))
 		self.__panAngleMin = self.getParam(self.nameSpace+'spinalcord/pan_angle_min', math.radians(-135.0))
 		self.__tiltAngleMax = self.getParam(self.nameSpace+'spinalcord/tilt_angle_max', math.radians(80.0))
-		self.__tiltAngleMin = self.getParam(self.nameSpace+'spinalcord/tilt_angle_min', math.radians(-10.0))
+		self.__tiltAngleMin = self.getParam(self.nameSpace+'spinalcord/tilt_angle_min', math.radians(-80.0))
 
 		self.__panDirection = self.getParam(self.nameSpace+'spinalcord/pan_direction', 1)
 		self.__tiltDirection = self.getParam(self.nameSpace+'spinalcord/tilt_direction', 1)
@@ -91,9 +91,12 @@ class Sternocleidomastoid(NodeBase):
 													minAngleRads=self.__tiltAngleMin,
 													timeout=self.__timeout,
 													Direction=self.__tiltDirection)
-		self.setFrequencyFromParam(self.nameSpace+'spinalcord/Sternocleidomastoid_frquency')
+		self.setFrequencyFromParam(self.nameSpace+'spinalcord/Sternocleidomastoid_frequency')
 
 		self.__stateQueue = Queue()
+		self.__commandQueue = Queue()
+		self.__command = None
+		self.__lastCommand = None
 		self.__lastestState = JointState()
 
 		self.__initServos()
@@ -145,7 +148,7 @@ class Sternocleidomastoid(NodeBase):
 							position=	[0,0],
 							velocity=	[0,0],
 							effort  =	[retPan, retTilt])
-		self.__lastestState = js
+		self.__lastCommand = js
 		# self.__stateQueue.put(js)
 
 	def __rosInitNode(self):
@@ -169,10 +172,14 @@ class Sternocleidomastoid(NodeBase):
 		return PanTiltServiceResponse(js)
 
 	def callback(self, msg):
-		panPosition = getJsPosFromName(msg, "pan", self.__lastestState)
+		self.__commandQueue.put(msg)
+		self.__command = msg
+
+	def __processCommand(self, msg):
+		panPosition = getJsPosFromName(msg, "pan", self.__lastCommand)
 		rospy.logdebug(str(panPosition))
 		panSpeed = getJsVelFromName(msg, "pan")
-		tiltPosition = getJsPosFromName(msg, "tilt", self.__lastestState)
+		tiltPosition = getJsPosFromName(msg, "tilt", self.__lastCommand)
 		rospy.logdebug(str(tiltPosition))
 		tiltSpeed = getJsVelFromName(msg, "tilt")
 		retPan = 0 if self.__panMotor.moveFromRad_REGACTION(panPosition, panSpeed) is None else 1
@@ -180,9 +187,9 @@ class Sternocleidomastoid(NodeBase):
 
 		self.__panMotor.broadcastingAction()
 		print panPosition
-		self.__putMessageToQueue(panPosition, panSpeed, tiltPosition, tiltSpeed, retPan, retTilt)
+		self.__lastCommand = self.__createMessage(panPosition, panSpeed, tiltPosition, tiltSpeed, retPan, retTilt)
 
-	def __putMessageToQueue(self, panPos, panSpd, tiltPs, tiltSp, retPan, retTil):
+	def __createMessage(self, panPos, panSpd, tiltPs, tiltSp, retPan, retTil):
 		position = [self.__panMotor.clampAngleRad(panPos),
 					self.__tiltMotor.clampAngleRad(tiltPs)]
 		speed = [panSpd, tiltSp]
@@ -191,19 +198,41 @@ class Sternocleidomastoid(NodeBase):
 						position=	position,
 						velocity=	speed,
 						effort  =	effort)
-		self.__stateQueue.put(js)
+		# self.__lastestState = js
+		# self.__stateQueue.put(js)
+		return js
 
 	def __stampMessage(self):
 		self.__lastestState.header.stamp = rospy.Time.now()
 
+	def readPos(self):
+		panPos = self.__panMotor.get_position_rad()
+		tiltPos = self.__tiltMotor.get_position_rad()
+		print panPos, tiltPos
+		if panPos is not None and tiltPos is not None:
+			self.__lastestState = self.__createMessage(panPos, 0, tiltPos, 0, 1, 1)
+		else:
+			self.__lastestState = None
+
 	def run(self):
 		rospy.loginfo("Start sternocleidomastoid node.")
 		while not rospy.is_shutdown():
-			if not self.__stateQueue.empty():
-				self.__lastestState = self.__stateQueue.get()
-				self.__stateQueue.task_done()
-			self.__stampMessage()
-			self.publish(self.__lastestState)
+			# if not self.__commandQueue.empty():
+			# 	commandMsg = self.__commandQueue.get()
+			# 	self.__processCommand(commandMsg)
+			# 	self.__commandQueue.task_done()
+			if self.__command is not None:
+				self.__processCommand(self.__command)
+				self.__command = None
+
+			# if not self.__stateQueue.empty():
+			# 	self.__lastestState = self.__stateQueue.get()
+			# 	self.__stateQueue.task_done()
+			# self.__stampMessage()
+			self.readPos()
+			if self.__lastestState is not None:
+				self.__stampMessage()
+				self.publish(self.__lastestState)
 			self.sleep()
 		rospy.loginfo("Close sternocleidomastoid node.")
 

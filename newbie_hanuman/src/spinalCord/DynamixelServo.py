@@ -23,7 +23,7 @@ class ServoBase(object):
 		self.setAngleLimitRads(maxAngleRads, minAngleRads)
 
 		self.__regsPerRads = self.__maxAngleRegs / self.__maxAngleSpan
-		self.__radsPerRegs = self.__maxAngleSpan / self.__maxAngleRads
+		self.__radsPerRegs = self.__maxAngleSpan / self.__maxAngleRegs
 		self.__regsPerOmega = self.__maxOmegaRegs / self.__maxOmegaSpan
 		self.__omegaPerRegs = self.__maxOmegaSpan / self.__maxOmegaRegs
 		self.__centerRegs = self.__maxAngleRegs / 2
@@ -68,13 +68,15 @@ class ServoBase(object):
 	def get_position_reg(self):
 		position = self.spinal_cord.get_position(self.__motorID, self.timeout)
 		if len(position) >= 7:
-			angleReg = position[5] + position[6]<<8
+			print position[6]<<8, position[5]
+			angleReg = position[5] + (position[6]<<8)
 		else:
 			angleReg = None
 		return angleReg
 
 	def get_position_rad(self):
 		angleReg = self.get_position_reg()
+		print angleReg
 		if angleReg is None:
 			return
 		else:
@@ -112,7 +114,7 @@ class ServoBase(object):
 		return max(0, min(self.__maxAngleRegs, reg))
 
 	def __reg2angle(self, regs):
-		angles = int( (regs - self.__centerRegs) * self.__radsPerRegs )
+		angles = (regs - self.__centerRegs) * self.__radsPerRegs 
 		return angles
 
 	def __omega2reg(self, omega):

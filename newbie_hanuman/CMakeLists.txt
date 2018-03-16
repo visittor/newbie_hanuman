@@ -13,6 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   message_filters
+  genmsg
+  actionlib_msgs
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions
@@ -62,14 +65,14 @@ add_service_files(
   PanTiltService.srv
   MotorCortexCommand.srv
   reqMotorCortexIntegration.srv
+  PanTiltPlannerCommand.srv
   # Service2.srv
 )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
 #   FILES
-#   Action1.action
-#   Action2.action
+#   PanTiltPlanerAction.action
 # )
 
 ## Generate added messages and services with any dependencies listed here
@@ -173,6 +176,7 @@ install(PROGRAMS
   bin/KinematicBrain
   bin/MotorCortex
   bin/HanumanController
+  bin/PanTiltPlanner
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

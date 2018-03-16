@@ -8,7 +8,7 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Header
 
 from cell.nodeCell import NodeBase
-from brain.visionModule import VisionModule
+from visionModule import VisionModule
 from utility.utility import load_module
 
 import inspect
@@ -84,7 +84,8 @@ class OccipitalLobe(NodeBase):
 		self.set_visualizeFunction(module.visualizeFunction)
 		self.rosInitNode()
 		self.rosInitPublisher( 	"/vision_manager/occipital_lobe_topic",
-								self.__publisherMessageType)
+								self.__publisherMessageType,
+								queue_size = 1)
 		self.__rospub = rospy.Publisher("/vision_manager/cranial_nerve_ii_topic",
 								CompressedImage,
 								queue_size = 1)

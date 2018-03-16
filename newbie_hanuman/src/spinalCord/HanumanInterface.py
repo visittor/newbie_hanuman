@@ -142,6 +142,82 @@ class LocomotionSpecialCommand(object):
 	def __str__(self):
 		return self.__command
 
+class HanumanStatus(object):
+
+	def __init__(self, statusPackage):
+		self.statusDict = {}
+		self.statusDict["firmware"] = HanumanProtocol.get_robotStatus(
+													statusPackage, 
+													"REG_FIRMWARE_VERSION_L")
+		self.statusDict["firmware"] += HanumanProtocol.get_robotStatus(
+												statusPackage, 
+												"REG_FIRMWARE_VERSION_H")<<8
+		self.statusDict["lococommand"] = HanumanProtocol.get_robotStatus(
+												statusPackage, 
+												"REG_LOCOMOTION_COMMAND")
+		self.statusDict["locostatus"] = HanumanProtocol.get_robotStatus(
+												statusPackage, 
+												"REG_LOCOMOTION_STATUS_L")
+		self.statusDict["locostatus"] += HanumanProtocol.get_robotStatus(
+												statusPackage,
+												"REG_LOCOMOTION_STATUS_H")<<8
+		self.statusDict["backFallDown"]=HanumanInterface.is_backFallDown(
+												self.locostatus)
+
+		self.statusDict["frontFallDown"]=HanumanInterface.is_frontFallDown(
+												self.locostatus)
+		
+		self.statusDict["compass"] = HanumanProtocol.get_robotStatus(
+														statusPackage,
+														"REG_COMPASS_L")
+		self.statusDict["compass"] += HanumanProtocol.get_robotStatus(
+														statusPackage, 
+														"REG_COMPASS_H")<<8
+		self.statusDict["gyroX"] = HanumanProtocol.get_robotStatus(
+													statusPackage,
+													"REG_GYRO_ROT_X_L")
+		self.statusDict["gyroX"] += HanumanProtocol.get_robotStatus(
+													statusPackage, 
+													"REG_GYRO_ROT_X_H")<<8
+		self.statusDict["gyroY"] = HanumanProtocol.get_robotStatus(
+													statusPackage, 
+													"REG_GYRO_ROT_Y_L")
+		self.statusDict["gyroY"] += HanumanProtocol.get_robotStatus(
+													statusPackage, 
+													"REG_GYRO_ROT_Y_H")<<8
+		self.statusDict["gyroZ"] = HanumanProtocol.get_robotStatus(
+													statusPackage,
+													"REG_GYRO_ROT_Z_L")
+		self.statusDict["gyroZ"] += HanumanProtocol.get_robotStatus(
+													statusPackage,
+													"REG_GYRO_ROT_Z_H")<<8
+		self.statusDict["linearVelX"] = HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_ROBOT_LINEAR_VELOCITY_X")
+		self.statusDict["linearVelY"] = HanumanProtocol.get_robotStatus(
+											statusPackage, 
+											"REG_ROBOT_LINEAR_VELOCITY_Y")
+		self.statusDict["angularVel"] = HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_ROBOT_ANGULAR_VELOCITY")
+		self.statusDict["magnetoX"] = HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_MAGNETO_X_L")
+		self.statusDict["magnetoX"] += HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_MAGNETO_X_H")<<8
+		self.statusDict["magnetoY"] = HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_MAGNETO_Y_L")
+		self.statusDict["magnetoY"] += HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_MAGNETO_Y_H")<<8
+		self.statusDict["magnetoZ"] = HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_MAGNETO_Z_L")
+		self.statusDict["magnetoZ"] += HanumanProtocol.get_robotStatus(
+											statusPackage,
+											"REG_MAGNETO_Z_H")<<9
 
 class HanumanInterface(object):
 
@@ -149,7 +225,7 @@ class HanumanInterface(object):
 			XWorldTranMax, XWorldTranMin, YWorldTranMax, YWorldTranMin, 
 			ZWorldAnglMax, ZWorldAnglMin, XRegisTranMax, XRegisTranMin, 
 			YRegisTranMax, YRegisTranMin, ZRegisAnglMax, ZRegisAnglMin,
-			timeout = None, timeTolerance = None):
+			timeout = None, timeTolerance = None, transitionTime = 1.0):
 
 		self.spinal_cord = HanumanProtocol(serial)
 
@@ -186,6 +262,9 @@ class HanumanInterface(object):
 		self.__stopCommad = self.convertVelocityToRegister(	0.0, 
 															0.0, 
 															0.0)
+		self.__transitionTime = transitionTime
+		self.__waitTransition = False
+
 	@staticmethod
 	def convertLocomotionRegToWorld(regis, regisMax, regisMin, worldMax, worldMin):
 		return max( min( ((worldMax-worldMin)/(regisMax-regisMin))*(regis-regisMin)+worldMin, worldMax) , worldMin)
@@ -273,6 +352,9 @@ class HanumanInterface(object):
 		if currentTime is None:
 			currentTime = time.time()
 
+		if self.__waitTransition and time.time() - self.__startCommandTime <= self.__transitionTime:
+			return
+		self.__waitTransition = False
 		command = self.__commandQueue.get_command(currentTime)
 		self.__nextCommand = command[1] if command is not None else None
 		self.__executeCommand()
@@ -332,6 +414,7 @@ class HanumanInterface(object):
 
 		elif isinstance(self.__nextCommand, LocomotionSpecialCommand):
 			isSuccess = self.__executeSpecial(self.__nextCommand)
+			self.__waitTransition = isSuccess
 
 		else:
 			raise LowLevelInterfaceException("Command is neither LocomotionSpecialCommand nor LocomotionSpecialCommand.")
@@ -417,3 +500,9 @@ class HanumanInterface(object):
 			return False
 
 		return True
+
+	def getHanumanStatus(self):
+		self.spinal_cord.read_AllLowLevelData()
+		statusPackage = self.spinal_cord.get_statusPackage()
+		hanumanStatus = HanumanStatus(statusPackage)
+		return hanumanStatus

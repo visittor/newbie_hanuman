@@ -153,6 +153,15 @@ class HanumanProtocol(RobotisProtocol):
 								6,
 								timeout = timeout)
 
+	@staticmethod
+	def get_robotStatus(statusPackage, status):
+		index = RegisterAddrDict[status]
+		if statusPackage is None:
+			return
+		elif len(statusPackage) != len(RegisterNames):
+			return
+		return statusPackage[index]
+
 	def get_locomotionStatus(self):
 		index = RegisterAddrDict["REG_LOCOMOTION_STATUS_L"]
 		# print "robotStatus",self.__robotStatus
@@ -171,3 +180,6 @@ class HanumanProtocol(RobotisProtocol):
 			return robotStatus
 		else:
 			return None
+
+	def get_statusPackage(self):
+		return self.__robotStatus

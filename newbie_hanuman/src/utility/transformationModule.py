@@ -15,6 +15,7 @@ def Project2Dto3D(point, HomoMat, intrinMat):
 
 	pPoint = np.hstack((pPoint, 1))
 	pPoint_3 = np.matmul(invHomo, pPoint)[:3]
+	# pPoint_3 = pPoint_3/pPoint_3[2]
 
 	unitVec = pPoint_3 - Cpoint_3
 	unitVec /= np.linalg.norm(unitVec)
@@ -29,6 +30,8 @@ def Project3Dto2D(point, HomoMat, intrinMat):
 	point = np.hstack((point,1))
 
 	tranPoint = np.matmul(HomoMat, point)[:3]
+	if tranPoint[2] < 0:
+		return
 	tranPoint = np.matmul(intrinMat, tranPoint)
 	tranPoint = tranPoint / tranPoint[2]
 
