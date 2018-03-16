@@ -1,0 +1,24 @@
+# Goal
+uint8 SET_GOAL_POSITION = 0
+uint8 FOLLOW_PATTERN = 1
+uint8 TRACKING = 2
+
+string[] name
+float64[] position
+float64[] velocity
+
+string pattern
+
+float64 errorDistance
+
+uint8 command
+---
+# Result
+
+bool success
+---
+# Feedback
+
+string[] name
+float64[] goalPos
+float64[] velocity
