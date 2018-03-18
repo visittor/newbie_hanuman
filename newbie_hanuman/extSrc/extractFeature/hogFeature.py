@@ -80,7 +80,7 @@ if __name__ == "__main__":
 				img = cv2.resize(img, (IMAGE_SIZE,IMAGE_SIZE))
 				feature = hog.compute(img).reshape(-1)
 				feature = np.hstack((feature,np.array([label],feature.dtype)))
-				index.append(name.split("/")[-1].split("\\")[-1].split(".")[0]+str(i)+str(j))
+				index.append(name.split("/")[-1].split("\\")[-1].split(".")[0]+"png"+str(i)+"C"+str(j))
 				datas.append(feature)
 
 	datas = np.array(datas)
