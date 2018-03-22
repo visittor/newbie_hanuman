@@ -22,7 +22,8 @@ class CranialNerveII(NodeBase):
 		super(CranialNerveII, self).__init__("cranial_nerve_ii")
 		self.rosInitNode()
 		self.rosInitPublisher("/vision_manager/cranial_nerve_ii_topic", CompressedImage, queue_size = 1)
-		self.setFrequencyFromParam("/vision_manager/cranial_nerve_ii_frquency")
+		# self.setFrequencyFromParam("/vision_manager/cranial_nerve_ii_frquency")
+		self.setFrequency(60)
 		cameraID = self.getParam('/vision_manager/cameraID', 0)
 		self.__cap = cv2.VideoCapture(cameraID)
 

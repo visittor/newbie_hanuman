@@ -233,6 +233,10 @@ class Sternocleidomastoid(NodeBase):
 			if self.__lastestState is not None:
 				self.__stampMessage()
 				self.publish(self.__lastestState)
+			elif self.__lastCommand is not None:
+				self.__lastCommand.header.stamp = rospy.Time.now()
+				self.publish(self.__lastCommand)
+
 			self.sleep()
 		rospy.loginfo("Close sternocleidomastoid node.")
 

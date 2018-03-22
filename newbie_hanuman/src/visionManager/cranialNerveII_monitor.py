@@ -23,7 +23,7 @@ class cranialNerveII_monitor(NodeBase):
 
 	def initial(self,):
 		self.__rosInitNode()
-		self.rosInitSubscriber("/vision_manager/cranial_nerve_ii_topic", CompressedImage, self.__callback)
+		self.rosInitSubscriber("/vision_manager/occipital_debug_topic", CompressedImage, self.__callback, buff_size=8*3*480*640)
 
 	def __rosInitNode(self):
 		self.rosInitNode()

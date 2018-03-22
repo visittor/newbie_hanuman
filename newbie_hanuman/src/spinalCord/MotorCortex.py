@@ -62,13 +62,12 @@ class MotorCortex(NodeBase):
 													self.__ZRegisAnglMin,
 													timeout = self.__timeout,
 										timeTolerance = self.__timeTolerance)
-		self.setFrequencyFromParam(self.nameSpace+'motor_cortex/MotorCortex_frquency')
-
 		self.__lastResetIntegration = rospy.Time.now()
 		self.__lastFallDown = rospy.Time.now()
 
 		self.__initLocomotion()
 		self.__rosInitSubPubSer()
+		self.setFrequency(5)
 
 	def __connectSerialPort(self):
 		if self.__serial.is_open:
@@ -104,7 +103,6 @@ class MotorCortex(NodeBase):
 		rospy.Service(	"request_integration",
 						reqMotorCortexIntegration,
 						self.__reqIntegration)
-		self.setFrequency(5)
 
 	def __receiveCommand(self, req):
 		if req.commandType == req.LOCOMOTIONCOMMAND:
@@ -138,14 +136,17 @@ class MotorCortex(NodeBase):
 		return response
 
 	def publish(self, status):
-		msg = HanumanStatusMsg( **status.statusDict )
+		if status is None:
+			return
+		status.statusDict["lastFallDownStamp"] = self.__lastFallDown
+		msg = HanumanStatusMsg( **status.statusDict)
 		super(MotorCortex, self).publish(msg)
 
 	def run(self):
 		rospy.loginfo("Start motor cortex node.")
 		while not rospy.is_shutdown():
-			hanumanStatus = self.__hanumanInterface.getHanumanStatus()
-			if hanumanStatus["backFallDown"] or hanumanStatus["fontFallDown"]:
+			status = self.__hanumanInterface.getHanumanStatus()
+			if status is not None and status.statusDict["backFallDown"] or status.statusDict["fontFallDown"]:
 				rospy.loginfo("Robot fall down. Reset integration and force standup.")
 				# time.sleep(0.1)
 				self.__lastFallDown = rospy.Time.now()
@@ -156,7 +157,7 @@ class MotorCortex(NodeBase):
 				# time.sleep(0.1)
 				rospy.loginfo("Do current command.")
 				self.__hanumanInterface.doCurrentCommand()
-			self.publish(hanumanStatus)
+			self.publish(status)
 			self.sleep()
 		rospy.loginfo("Close motor cortex node.")
 

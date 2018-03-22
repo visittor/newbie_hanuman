@@ -84,6 +84,7 @@ class B(KinematicModule):
 
 		
 		path = "/".join(PATH.split("/")[:]+["output_matrix.npz"])
+
 		intrinMat = np.load(path)["camera_matrix"]
 		# intrinMat[0,0] /= 10
 		intrinMat[:2,:2] *= 1
@@ -173,6 +174,10 @@ class B(KinematicModule):
 
 		self.image = None
 
+		fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+		filname = "/".join(PATH.split("/")[:]+["output.avi"])
+		self.out = cv2.VideoWriter('output.avi',fourcc, 60.0, (640,480))
+
 	def __code(self, x, y, xmin, xmax, ymin, ymax):
 		c = 0
 		c += 0 if y>=ymin else 1
@@ -248,14 +253,14 @@ class B(KinematicModule):
 		# point3D1 = self.calculate3DCoor(self.point2D1, HCamera=self.HCamera)
 		point3D1 = self.calculate3DCoor(self.point2D3, HCamera=H)
 
-		for i,tup in enumerate(point3D1):
-			point = tup[1]
-			if point is None:
-				print None, self.points[i]
-				continue 
-			p = [round(point[0],2), round(point[1],2), 0]
-			p = np.array(p)
-			print p, self.points[i]
+		# for i,tup in enumerate(point3D1):
+		# 	point = tup[1]
+		# 	if point is None:
+		# 		print None, self.points[i]
+		# 		continue 
+		# 	p = [round(point[0],2), round(point[1],2), 0]
+		# 	p = np.array(p)
+		# 	print p, self.points[i]
 
 		# print point3D1
 		for i in self.pattern:
@@ -284,7 +289,11 @@ class B(KinematicModule):
 	def loop(self):
 		if self.image is not None:
 			cv2.imshow("image",self.image)
+			# self.out.write(self.image)
 			cv2.waitKey(1)
+
+	def end(self):
+		self.out.release()
 
 vision_module = A()
 kinematic_module = B()

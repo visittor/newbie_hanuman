@@ -504,5 +504,7 @@ class HanumanInterface(object):
 	def getHanumanStatus(self):
 		self.spinal_cord.read_AllLowLevelData()
 		statusPackage = self.spinal_cord.get_statusPackage()
+		if statusPackage is None:
+			return
 		hanumanStatus = HanumanStatus(statusPackage)
 		return hanumanStatus

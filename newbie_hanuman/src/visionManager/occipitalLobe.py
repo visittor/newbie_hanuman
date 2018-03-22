@@ -64,8 +64,9 @@ class OccipitalLobe(NodeBase):
 		self.__serviceCallback = None
 		self.__publisherMessageType = None
 		self.__visualizeFunc = lambda x,y:x
-		cameraID = self.getParam('/vision_manager/cameraID', 0)
-		self.__cap = cv2.VideoCapture(cameraID)
+		self.__img = None
+		# cameraID = self.getParam('/vision_manager/cameraID', 0)
+		# self.__cap = cv2.VideoCapture(cameraID)
 
 	def set_subscribeCallback(self, func):
 		self.__subscribeCallback = func
@@ -86,10 +87,18 @@ class OccipitalLobe(NodeBase):
 		self.rosInitPublisher( 	"/vision_manager/occipital_lobe_topic",
 								self.__publisherMessageType,
 								queue_size = 1)
-		self.__rospub = rospy.Publisher("/vision_manager/cranial_nerve_ii_topic",
+		self.__rospub = rospy.Publisher("/vision_manager/occipital_debug_topic",
 								CompressedImage,
 								queue_size = 1)
+		self.rosInitSubscriber("/vision_manager/cranial_nerve_ii_topic",
+								 CompressedImage, 
+								 self.__receiveImage,
+								 queue_size = 1)
 		self.setFrequencyFromParam("/vision_manager/cranial_nerve_ii_frquency")
+
+	def __receiveImage(self, msg):
+		npArray = np.fromstring(msg.data, dtype=np.uint8)
+		self.__img = cv2.imdecode(npArray, 1)
 
 	def __createCompressedImage(self, img, stamp):
 		msg = CompressedImage()
@@ -105,7 +114,11 @@ class OccipitalLobe(NodeBase):
 	def run(self):
 		rospy.loginfo("Start OccipitalLobe node.")
 		while not rospy.is_shutdown():
-			ret, img = self.__cap.read()
+			# ret, img = self.__cap.read()
+			if self.__img is None:
+				self.sleep()
+				continue
+			img = self.__img.copy()
 			stamp = rospy.Time.now()
 			header = Header(stamp = stamp)
 			objectMsg = self.__subscribeCallback(img, header)
@@ -115,7 +128,7 @@ class OccipitalLobe(NodeBase):
 			self.sleep()
 
 	def end(self):
-		self.__cap.release()
+		# self.__cap.release()
 		rospy.loginfo("Close OccipitalLobe node.")
 
 def main():

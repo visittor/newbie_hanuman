@@ -67,7 +67,7 @@ class ServoBase(object):
 
 	def get_position_reg(self):
 		position = self.spinal_cord.get_position(self.__motorID, self.timeout)
-		if len(position) >= 7:
+		if position is not None and len(position) >= 7:
 			print position[6]<<8, position[5]
 			angleReg = position[5] + (position[6]<<8)
 		else:

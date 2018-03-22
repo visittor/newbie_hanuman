@@ -198,3 +198,6 @@ class KinematicModule(object):
 
 	def loop(self):
 		pass
+
+	def end(self):
+		pass

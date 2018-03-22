@@ -35,8 +35,8 @@ class NodeBase(object):
 	def rosInitPublisher(self, name, msg, queue_size = 1):
 		self.__ros_pub = rospy.Publisher(name, msg, queue_size = queue_size)
 
-	def rosInitSubscriber(self, name, msg, callback,queue_size = 1):
-		rospy.Subscriber(name, msg, callback, queue_size=queue_size)
+	def rosInitSubscriber(self, name, msg, callback,queue_size = 1, buff_size=65536):
+		rospy.Subscriber(name, msg, callback, queue_size=queue_size, buff_size=buff_size)
 
 	def rosInitService(self, name, service, handle):
 		rospy.Service(name, service, handle)

@@ -107,7 +107,7 @@ class KinematicBrain(NodeBase):
 		rospy.loginfo("Close kinematic_brain node.")
 
 	def end(self):
-		pass
+		self.__module.end()
 
 def main():
 	fileName = rospy.get_param("/vision_manager/vision_module_path", '')

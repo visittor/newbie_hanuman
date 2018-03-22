@@ -49,7 +49,7 @@ class FSMBrainState():
 		except ChangeBrainState as e:
 			newStateName = e.newStateName
 			if not self.__subBrains.has_key(newStateName):
-				rospy.logfatal("{} do not have sub brain name {}. What the fuck should I do next. Fuck you who wrote this code!!!!!!!!!!.".format(self.name, newStateName))
+				rospy.logerr("{} do not have sub brain name {}. What the fuck should I do next. Fuck you who wrote this code!!!!!!!!!!.".format(self.name, newStateName))
 				return
 			self.__previousSubBrain = self.__currentSubBrain
 			self.__previousSubBrainName = self.__currentSubBrainName

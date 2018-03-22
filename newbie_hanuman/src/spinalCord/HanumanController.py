@@ -5,6 +5,7 @@ import rospy
 
 from newbie_hanuman.srv import MotorCortexCommand,MotorCortexCommandResponse
 from newbie_hanuman.srv import reqMotorCortexIntegration, reqMotorCortexIntegrationResponse
+from newbie_hanuman.msg import PanTiltCommand
 
 from cell.nodeCell import NodeBase
 
@@ -27,6 +28,11 @@ ANALOG_MAP = {	'y'			:		0,
 }
 
 class Controller(object):
+	name = ["pan", "tilt"]
+	position = [0,0]
+	velocity = [20,20]
+	command = [0,0]
+	ang = math.radians(10)
 
 	def __init__(self):
 		self.__rate = None
@@ -51,6 +57,10 @@ class Controller(object):
 						anonymous = False, 
 						log_level = rospy.INFO)
 		self.__rate = rospy.Rate(5)
+		self.__ros_pub = rospy.Publisher(
+									"/spinalcord/sternocleidomastoid_command",
+									PanTiltCommand,
+									)
 		rospy.wait_for_service('motor_cortex_command')
 		self.__motorCortexCommand = rospy.ServiceProxy("motor_cortex_command",
 													MotorCortexCommand)
@@ -101,17 +111,19 @@ class Controller(object):
 			return
 
 		## Locomotion command
-		if self.hatData[0] != (0,0):
-			xVel = 0.5*self.hatData[0][1]
-			yVel = -0.5*self.hatData[0][0]
-			omgZ = 0.0
+		position = [self.hatData[0][0]*self.ang, self.hatData[0][1]*self.ang]
+		c = PanTiltCommand(	name 		= self.name,
+							position 	= position,
+							velocity	= self.velocity,
+							command 	= self.command)
+		self.__ros_pub.publish(c)
 
-		else:
-			gainLin = 0.5*(1.0 + self.axisData[ANALOG_MAP['LT']]) + 1
-			gainAng = 0.5*(1.0 + self.axisData[ANALOG_MAP['RT']]) + 1
-			xVel = -1*gainLin*(0.5*self.axisData[ANALOG_MAP['x']])
-			yVel = -1*gainLin*(0.5*self.axisData[ANALOG_MAP['y']])
-			omgZ = -1*gainAng*(0.5*self.axisData[ANALOG_MAP['z']])
+		# else:
+		gainLin = 0.5*(1.0 + self.axisData[ANALOG_MAP['LT']]) + 1
+		gainAng = 0.5*(1.0 + self.axisData[ANALOG_MAP['RT']]) + 1
+		xVel = -1*gainLin*(0.5*self.axisData[ANALOG_MAP['x']])
+		yVel = -1*gainLin*(0.5*self.axisData[ANALOG_MAP['y']])
+		omgZ = -1*gainAng*(0.5*self.axisData[ANALOG_MAP['z']])
 
 		xVel = 0.0 if -0.01 <= xVel <= 0.01 else xVel
 		yVel = 0.0 if -0.01 <= yVel <= 0.01 else yVel

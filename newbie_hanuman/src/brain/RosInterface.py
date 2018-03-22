@@ -20,7 +20,7 @@ class RosInterface(object):
 			self.__publisher.publish(self.__msg)
 
 		def doThisCommand(self, msg, *arg, **kwarg):
-			self.setMsg(*arg, **kwarg):
+			self.setMsg(*arg, **kwarg)
 			self.sendCurrentMsg()
 
 	def __init__(self):
@@ -30,6 +30,7 @@ class RosInterface(object):
 
 	def __subscribeCallBackGenerator(self, varName, method):
 		def callBack(self, msg):
+			print varName
 			setattr(self, varName, msg)
 
 		def callBackQueue(self, msg):
@@ -42,29 +43,33 @@ class RosInterface(object):
 			return callBackQueue
 
 	def interfaceWithPublisher(self, topic, msg, varName, store_type='recent', initialVal = None,queue_size = 1):
-		assert store_type=='recent' or store_type=='queue'
+		assert store_type=='recent' or store_type=='queue' or store_type=="priorityQueue"
 		assert varName not in self.__subscriberInterface
 		if store_type == 'recent':
 			setattr(self, varName, initialVal)
+			func = lambda x: self.__subscribeCallBackGenerator(varName, store_type)(self, x)
 			setattr(self, 
-					"__"+varName+"Callback", 
-					self.__subscribeCallBackGenerator(varName, store_type))
+					varName+"Callback", 
+					func)
 
 		elif store_type == 'queue':
 			setattr(self, varName, Queue())
+			func = lambda x: self.__subscribeCallBackGenerator(varName, store_type)(self, x)
 			setattr(self, 
-					"__"+varName+"Callback",
-					self.__subscribeCallBackGenerator(varName, store_type))
+					varName+"Callback",
+					func)
 
 		elif store_type == 'priorityQueue':
 			setattr(self, varName, PriorityQueue)
+			func = lambda x: self.__subscribeCallBackGenerator(varName, store_type)(self, x)
 			setattr(self, 
-					"__"+varName+"Callback", 
-					self.__subscribeCallBackGenerator(varName, store_type))
-
+					varName+"Callback", 
+					func)
+		print msg
 		rospy.Subscriber(topic, msg,
-						 getattr(self, "__"+varName+"Callback") ,
+						 getattr(self, varName+"Callback") ,
 						 queue_size=queue_size)
+
 		self.__subscriberInterface.append(varName)
 
 	def interfaceWithService(self, serviceName,  serviceClass, funcName):

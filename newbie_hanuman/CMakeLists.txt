@@ -56,6 +56,7 @@ add_message_files(
   FILES
   msgForBlissFace.msg
   PanTiltCommand.msg
+  HanumanStatusMsg.msg
   # Message2.msg
 )
 
