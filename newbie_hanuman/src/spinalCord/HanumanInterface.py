@@ -162,10 +162,10 @@ class HanumanStatus(object):
 												statusPackage,
 												"REG_LOCOMOTION_STATUS_H")<<8
 		self.statusDict["backFallDown"]=HanumanInterface.is_backFallDown(
-												self.locostatus)
+												self.statusDict["locostatus"])
 
 		self.statusDict["frontFallDown"]=HanumanInterface.is_frontFallDown(
-												self.locostatus)
+												self.statusDict["locostatus"])
 		
 		self.statusDict["compass"] = HanumanProtocol.get_robotStatus(
 														statusPackage,

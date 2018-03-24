@@ -146,7 +146,7 @@ class MotorCortex(NodeBase):
 		rospy.loginfo("Start motor cortex node.")
 		while not rospy.is_shutdown():
 			status = self.__hanumanInterface.getHanumanStatus()
-			if status is not None and status.statusDict["backFallDown"] or status.statusDict["fontFallDown"]:
+			if status is not None and status.statusDict["backFallDown"] or status.statusDict["frontFallDown"]:
 				rospy.loginfo("Robot fall down. Reset integration and force standup.")
 				# time.sleep(0.1)
 				self.__lastFallDown = rospy.Time.now()
@@ -175,8 +175,8 @@ def main():
 	except rospy.ROSInterruptException as e:
 		node.end()
 		rospy.logwarn(str(e))
-	except Exception as e:
-		node.end()
-		rospy.logwarn(str(e))
+	# except Exception as e:
+	# 	node.end()
+	# 	rospy.logwarn(str(e))
 	finally:
 		node.end()

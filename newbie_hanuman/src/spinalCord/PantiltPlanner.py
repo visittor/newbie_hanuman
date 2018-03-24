@@ -14,8 +14,8 @@ PATTERN = {}
 
 PATTERN["basic_pattern"] = [ (math.radians(-30), math.radians(0)),
 							 (math.radians(30), math.radians(0)),
-							 (math.radians(30), math.radians(-30)),
-							 (math.radians(-30), math.radians(-30))]
+							 (math.radians(30), math.radians(30)),
+							 (math.radians(-30), math.radians(30))]
 
 def getJsPosFromName(Js, name):
 	indexJs = Js.name.index(name)

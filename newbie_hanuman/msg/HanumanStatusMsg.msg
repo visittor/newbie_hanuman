@@ -10,8 +10,8 @@ uint16 compass
 uint16 gyroX
 uint16 gyroY
 uint16 gyroZ
-uint8 linearX
-uint8 linearY
+uint8 linearVelX
+uint8 linearVelY
 uint8 angularVel
 uint16 magnetoX
 uint16 magnetoY

@@ -10,6 +10,7 @@ from newbie_hanuman.msg import PanTiltCommand
 from cell.nodeCell import NodeBase
 
 import os
+import math
 
 BUTTON_MAP = { 	'A' 		:		0,
 				'B' 		:		1,
@@ -111,7 +112,7 @@ class Controller(object):
 			return
 
 		## Locomotion command
-		position = [self.hatData[0][0]*self.ang, self.hatData[0][1]*self.ang]
+		position = [-self.hatData[0][0]*self.ang, -self.hatData[0][1]*self.ang]
 		c = PanTiltCommand(	name 		= self.name,
 							position 	= position,
 							velocity	= self.velocity,

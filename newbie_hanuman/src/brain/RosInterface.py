@@ -30,7 +30,6 @@ class RosInterface(object):
 
 	def __subscribeCallBackGenerator(self, varName, method):
 		def callBack(self, msg):
-			print varName
 			setattr(self, varName, msg)
 
 		def callBackQueue(self, msg):

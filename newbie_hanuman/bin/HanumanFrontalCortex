@@ -1,0 +1,6 @@
+#! /usr/bin/env python
+
+import brain.SkullHanuman
+
+if __name__ == "__main__":
+	brain.SkullHanuman.main()

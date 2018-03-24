@@ -1,0 +1,30 @@
+<launch>
+	<!-- Argument -->
+	<arg name="global_verbosity" default="debug"/>
+	<arg name="global_frequency" default="10"/>
+	<arg name="camera_device" default="1" doc="Select Camera Device 0: Laptop Webcam 1: External Webcam"/>
+	<arg name="cranial_nerve_ii_frquency" default="$( arg global_frequency)"/>
+	<arg name="vision_module_path" default='' />
+	<arg name="sterno_pan_motor" default= "mx28"/>
+	<arg name="sterno_tilt_motor" default= "mx28"/>
+	<arg name="sterno_baurdrate" default= "115200"/>
+
+	<!-- Set Parameters -->
+	<param name="/global_verbosity" value="$( arg global_verbosity )"/>
+	<param name="/global_frequency" value="$( arg global_frequency )"/>
+	<param name="/vision_manager/cameraID" value="$( arg camera_device )"/>
+	<param name="/vision_manager/cranial_nerve_ii_frquency" value="$( arg cranial_nerve_ii_frquency )"/>
+	<param name="/vision_manager/vision_module_path" value="$( arg vision_module_path )"/>
+	<param name="/spinalcord/pan_motor_serie" value="$( arg sterno_pan_motor)"/>
+	<param name="/spinalcord/tilt_motor_serie" value="$( arg sterno_tilt_motor)"/>
+	<param name="/spinalcord/head_baurdrate" value="$( arg sterno_baurdrate)"/>
+
+	<!-- Running Node -->
+	<node pkg="newbie_hanuman" type="CranialNerveII" name="CranialNerveII"/>
+	<node pkg="newbie_hanuman" type="OccipitalLobe" name="OccipitalLobe"/>
+	<node pkg="newbie_hanuman" type="KinematicBrain" name="KinematicBrain" />
+	<node pkg="newbie_hanuman" type="PanTiltPlanner" name="PanTiltPlanner"/>"
+	<node pkg="newbie_hanuman" type="Sternocleidomastoid" name="Sternocleidomastoid" />
+	<node pkg="newbie_hanuman" type="MotorCortex" name="MotorCortex"/>
+	
+</launch>
