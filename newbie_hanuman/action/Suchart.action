@@ -1,0 +1,25 @@
+#goal definition
+
+string ACTIVE_GRIPPER = "active_gripper"
+string RELEASE_GRIPPER = "release_gripper"
+string REACH_POSITION = "reach_position"
+
+string[] name
+float64[] position
+float64[] velocity
+string command
+---
+#result definition
+
+bool is_success
+---
+#feedback
+
+sensor_msgs/JointState goalPosition
+sensor_msgs/JointState currPosition
+
+bool is_reach_pos
+bool gripper_active
+bool gripper_release
+bool gameStatusInitialState
+bool gameStatusPlayState

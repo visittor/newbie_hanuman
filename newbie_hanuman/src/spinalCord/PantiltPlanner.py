@@ -197,20 +197,28 @@ class PantiltPlanner(NodeBase):
 			errorPan = min(max(self.__currError[0], -1.0), 1.0)
 			errorTilt = min(max(self.__currError[1], -1.0), 1.0)
 
-			derivTermPan = kd*(errorPan - self.__prevError[0]) if self.__prevError is not None else 0.0
-			propTermPan = kp*errorPan
-			pdPan = propTermPan + derivTermPan/(rospy.get_time() - self.__prevTime)
+			if -0.2 < errorPan < 0.2:
+				errorPan = 0.0
 
-			derivTermTilt = kd*(errorTilt - self.__prevError[1]) if self.__prevError is not None else 0.0
-			propTermTilt = kp*errorTilt
-			pdTilt = propTermTilt + derivTermTilt/(rospy.get_time() - self.__prevTime)
+			if -0.2 < errorTilt < 0.2:
+				errorTilt = 0.0
 
-			self.__prevError = error
+			derivTermPan = self.__kd*(errorPan - self.__prevError[0]) if self.__prevError is not None else 0.0
+			propTermPan = self.__kp*errorPan
+			pdPan = propTermPan - derivTermPan/(rospy.get_time() - self.__prevTime)
+			print propTermPan, derivTermPan, errorPan
+
+			derivTermTilt = self.__kd*(errorTilt - self.__prevError[1]) if self.__prevError is not None else 0.0
+			propTermTilt = self.__kp*errorTilt
+			pdTilt = propTermTilt - derivTermTilt/(rospy.get_time() - self.__prevTime)
+
+			self.__prevError = self.__currError
 			self.__prevTime = rospy.get_time()
 			c = PanTiltCommand(	name 		= 	["pan", "tilt"],
 								position 	=	[pdPan, pdTilt],
 								velocity 	=	[0,0],
 								command 	=	[0,0])
+			self.__currError = [0,0]
 			return c
 
 		def terminate(self):
@@ -232,7 +240,7 @@ class PantiltPlanner(NodeBase):
 
 		kp = float(self.getParam(
 							self.nameSpace+'spinalcord/pantilt_kp',
-							math.radians(15)))
+							math.radians(10)))
 		kd = float(self.getParam(
 							self.nameSpace+'spinalcord/pantilt_kd',
 							math.radians(0)))
@@ -316,7 +324,7 @@ class PantiltPlanner(NodeBase):
 		rospy.loginfo("Start pantilt planer node.")
 		while  not rospy.is_shutdown():
 			command = self.__scaner.execute()
-			print command
+			# print command
 			if command is not None:
 				self.publish(command)
 			self.sleep()

@@ -135,6 +135,10 @@ class KinematicModule(object):
 					dtype = float)
 		return np.matmul(np.matmul(Y,P), R)
 
+	@staticmethod
+	def getInverseHomoMat(H):
+		getInverseHomoMat(H)
+
 	def set_IntrinsicCameraMatrix(self, intrinMat):
 		assert intrinMat.shape == (3,3)
 		self.__intrinsicMatrix = intrinMat

@@ -60,15 +60,15 @@ class KinematicBrain(NodeBase):
 								self.__posDictMessageType)
 
 	def __initMessageFilter(self):
-		# rospy.Subscriber("/vision_manager/occipital_lobe_topic",
-		# 				self.__occipitalMessageType,
-		# 				self.ddd, 
-		# 				queue_size=1)
+		rospy.Subscriber("/vision_manager/occipital_lobe_topic",
+						self.__occipitalMessageType,
+						self.ddd, 
+						queue_size=1)
 
-		# rospy.Subscriber("/spinalcord/sternocleidomastoid_position",
-		# 				JointState,
-		# 				self.eee, 
-		# 				queue_size=1)
+		rospy.Subscriber("/spinalcord/sternocleidomastoid_position",
+						JointState,
+						self.eee, 
+						queue_size=1)
 
 		objSub = Subscriber("/vision_manager/occipital_lobe_topic",
 							self.__occipitalMessageType, buff_size = 2**24)
@@ -123,8 +123,8 @@ def main():
 		node = KinematicBrain()
 		node.initial(module)
 		node.run()
-	# except rospy.ROSInterruptException as e:
-	except Exception as e:
+	except rospy.ROSInterruptException as e:
+	# except Exception as e:
 		print "\n\n\n"
 		print e
 		print "\n\n\n"

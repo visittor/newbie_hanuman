@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
 	assert img is not None
 
-	cells = [np.hsplit(row,100) for row in np.vsplit(img,50)]
+	cells = [np.hsplit(row,50) for row in np.vsplit(img,10)]
 	
 	data = []
 

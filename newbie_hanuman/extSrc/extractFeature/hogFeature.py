@@ -9,7 +9,7 @@ import os
 from random import shuffle
 
 IMAGE_SIZE = 50
-BLOCKSIZE = 10
+BLOCKSIZE = 20
 BLOCKSTRIBE = BLOCKSIZE/2
 CELLSIZE = BLOCKSIZE
 NBINS = 9

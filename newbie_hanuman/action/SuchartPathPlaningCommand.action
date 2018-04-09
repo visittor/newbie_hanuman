@@ -1,0 +1,26 @@
+# goal definition
+
+string ACTIVE_GRIPPER = "active_gripper"
+string RELEASE_GRIPPER = "release_gripper"
+string REACH_POSITION = "reach_position"
+
+sensor_msgs/JointState goalPosition
+string command
+
+---
+# result
+uint8 SUCCESS = 1
+uint8 FAIL = 0
+uint8 AVOID_LASER = 2
+uint8 UNAVOID_LASER = 0
+
+uint8 result
+
+---
+# feedback
+
+sensor_msgs/JointState goalPosition
+sensor_msgs/JointState currPosition
+
+int32 n_via_point
+int32 current_via_point

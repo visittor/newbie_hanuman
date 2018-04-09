@@ -9,4 +9,5 @@ newbie_hanuman/extSrc/extractFeature/wekaData/
 *.csv
 *.csv*
 *.arff
+*.pk1
 CMakeLists.txt

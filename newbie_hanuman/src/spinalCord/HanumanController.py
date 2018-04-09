@@ -188,8 +188,8 @@ def main():
 	except rospy.ROSInterruptException as e:
 		node.end()
 		rospy.logwarn(str(e))
-	except Exception as e:
-		node.end()
-		rospy.logwarn(str(e))
+	# except Exception as e:
+	# 	node.end()
+	# 	rospy.logwarn(str(e))
 	finally:
 		node.end()

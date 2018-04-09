@@ -1,0 +1,48 @@
+#! /usr/bin/env python
+from newbie_hanuman.msg import visionMsg, postDictMsg
+from newbie_hanuman.srv import PanTiltPlannerCommand
+
+import rospy
+
+errX = None
+errY = None
+
+def callback(msg):
+	global errX, errY
+	print "!!!!!!!!!!!!!"
+	print msg.ball_img
+	if len(msg.ball_img) == 0:
+		errX = None
+		errY = None
+		print "WTF"
+		return
+	errX = 2*(0.5*msg.imgW - msg.ball_img[0]) / float(msg.imgW)
+	errY = 2*(0.5*msg.imgH - msg.ball_img[1]) / float(msg.imgH)
+
+def trackingNode():
+	global errX, errY
+	rospy.init_node("test_tracking")
+	rospy.wait_for_service('pantiltplannercommand')
+	pantilt = rospy.ServiceProxy(	"pantiltplannercommand",
+									PanTiltPlannerCommand)
+	rospy.Subscriber(	"/vision_manager/kinematic_topic", postDictMsg,
+						 callback,
+						 queue_size=1)
+	rate = rospy.Rate(10)
+	while not rospy.is_shutdown():
+		print "errX:", errX, "errY:", errY
+		if errX is None or errY is None:
+			pass
+		else:
+			pantilt(errorPan=errX,
+					errorTilt=errY,
+					command = 2)
+		rate.sleep()
+
+if __name__ == "__main__":
+	try:
+		trackingNode()
+	except rospy.ROSInterruptException as e:
+		pass
+	finally:
+		pass

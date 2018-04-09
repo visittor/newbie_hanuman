@@ -91,6 +91,8 @@ class B(KinematicModule):
 		print intrinMat
 		self.set_IntrinsicCameraMatrix(intrinMat)
 
+		## Add plane
+
 		tranVec = np.array([0,0,0],float)
 		rotVec = np.array([0,0,0],float)
 		Hplane1 = self.create_transformationMatrix(tranVec, rotVec, 'zyz')
@@ -112,37 +114,12 @@ class B(KinematicModule):
 		self.add_plane(	"plane3", Hplane3, 
 						(-np.inf,np.inf), (-np.inf,np.inf), (-np.inf,np.inf))
 
-		points = [	[0.0, -0.5, 0.0],
-					[0.0, -0.25, 0.0],
-					[0.0, 0.0, 0.0],
-					[0.0, 0.25, 0.0],
-					[0.0, 0.5, 0.0],
-
-					[0.25, -0.5, 0.0],
-					[0.25, -0.25, 0.0],
-					[0.25, 0.0, 0.0],
-					[0.25, 0.25, 0.0],
-					[0.25, 0.5, 0.0],
-
-					[0.5, -0.5, 0.0],
-					[0.5, -0.25, 0.0],
-					[0.5, 0.0, 0.0],
-					[0.5, 0.25, 0.0],
-					[0.5, 0.5, 0.0],
-
-					[0.75, -0.5, 0.0],
-					[0.75, -0.25, 0.0],
-					[0.75, 0.0, 0.0],
-					[0.75, 0.25, 0.0],
-					[0.75, 0.5, 0.0],
-
-					[1.0, -0.5, 0.0],
-					[1.0, -0.25, 0.0],
-					[1.0, 0.0, 0.0],
-					[1.0, 0.25, 0.0],
-					[1.0, 0.5, 0.0],
-					]
-		points = np.array(points, float)*10
+		x, y = np.indices((5,5))
+		z = np.zeros((25,1), float)
+		points = np.hstack((x.reshape(-1,1), y.reshape(-1,1))).astype(float)
+		points[:,0] *= 0.25
+		points[:,1] = 0.25*points[:,1] - 0.5
+		points = np.hstack((points,z))
 		self.points = points.copy()
 
 		self.pattern = [	[0, 4],
@@ -187,10 +164,6 @@ class B(KinematicModule):
 		return c
 
 	def clipLine(self, point1, point2, shape):
-		# code1 = self.__code(point1[0], point1[1], 0, shape[1], 0, shape[0])
-		# code2 = self.__code(point2[0], point2[1], 0, shape[1], 0, shape[0])
-		# if code1 & code2 != 0:
-		# 	return False, point1, point2
 		if point1 is None or point2 is None:
 			return False, point1, point2
 
@@ -200,8 +173,6 @@ class B(KinematicModule):
 		if (-65535>=point2).any() or (point2>=65535).any():
 			return False, point1, point2
 
-		# point1 = np.clip(point1.astype(int), -(sys.maxint&0xFFFFFF), sys.maxint&0xFFFFFF)
-		# point2 = np.clip(point2.astype(int), -(sys.maxint&0xFFFFFF), sys.maxint&0xFFFFFF)
 		point1 = point1.astype(int)
 		point2 = point2.astype(int)
 		ret, pt1, pt2 = cv2.clipLine( (0,0,shape[1],shape[0]), tuple(point1), tuple(point2))
@@ -231,14 +202,6 @@ class B(KinematicModule):
 		npArray = np.fromstring(objMsg.data, dtype=np.uint8).copy()
 		self.image = cv2.imdecode(npArray, 1)
 
-		# panAng = getJsPosFromName(joint, "pan")
-		# tiltAng = -getJsPosFromName(joint, "tilt")
-
-		# tranCam = np.array([0,0,8.75],float)
-		# rotCam = np.array([panAng,tiltAng,0],float)
-		# HPanTilt = self.create_transformationMatrix(tranCam, rotCam, 'zyz')
-
-		# H = np.matmul(HPanTilt, self.HCamera)
 		H = self.__createHomoCam(joint)
 
 		self.point2D1 = self.calculate2DCoor(self.points, "plane1", HCamera=H)

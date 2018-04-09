@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  geometry_msgs
   message_filters
   genmsg
   actionlib_msgs
@@ -57,6 +58,10 @@ add_message_files(
   msgForBlissFace.msg
   PanTiltCommand.msg
   HanumanStatusMsg.msg
+  visionMsg.msg
+  postDictMsg.msg
+  suchartPostDictMsg.msg
+  suchartVisionMsg.msg
   # Message2.msg
 )
 
@@ -71,16 +76,19 @@ add_service_files(
 )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   PanTiltPlanerAction.action
-# )
+add_action_files(
+  DIRECTORY action
+  FILES
+  Suchart.action
+  SuchartPathPlaningCommand.action
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   sensor_msgs
   std_msgs
+  actionlib_msgs
 )
 
 ################################################
@@ -113,10 +121,10 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES newbie_hanuman
-#  CATKIN_DEPENDS message_generation rospy sensor_msgs std_msgs
-#  DEPENDS system_lib
+ # INCLUDE_DIRS include
+ LIBRARIES newbie_hanuman
+ CATKIN_DEPENDS message_generation rospy sensor_msgs std_msgs actionlib_msgs
+ DEPENDS system_lib
 )
 
 ###########
@@ -178,6 +186,7 @@ install(PROGRAMS
   bin/MotorCortex
   bin/HanumanController
   bin/PanTiltPlanner
+  bin/testTracking
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
