@@ -6,6 +6,7 @@ from newbie_hanuman.msg import SuchartFeedback, SuchartAction, SuchartResult
 
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 
 from sensor_msgs.msg import JointState
 
@@ -20,44 +21,44 @@ class SuchartMotorCortex(NodeBase):
 		super(SuchartMotorCortex, self).__init__("motor_cortex")
 
 		joint1_min = self.getParam(	self.nameSpace+"motor_cortex/joint1_min",
-									-np.pi)
+									0)
 		joint1_max = self.getParam(	self.nameSpace+"motor_cortex/joint1_max",
-									np.pi)
+									65535)
 
 		joint2_min = self.getParam(	self.nameSpace+"motor_cortex/joint2_min",
-									-0.1)
+									0)
 		joint2_max = self.getParam(	self.nameSpace+"motor_cortex/joint2_max",
-									0.86)
+									65535)
 
 		joint3_min = self.getParam(	self.nameSpace+"motor_cortex/joint3_min",
-									-3*np.pi/4)
+									0)
 		joint3_max = self.getParam(	self.nameSpace+"motor_cortex/joint3_max",
-									3*np.pi/4)
+									65535)
 
 		joint4_min = self.getParam(	self.nameSpace+"motor_cortex/joint4_min",
-									-3*np.pi/4)
+									0)
 		joint4_max = self.getParam(	self.nameSpace+"motor_cortex/joint4_max",
-									3*np.pi/4)
+									65535)
 
 		joint5_min = self.getParam(	self.nameSpace+"motor_cortex/joint5_min",
-									-np.pi/9)
+									0)
 		joint5_max = self.getParam(	self.nameSpace+"motor_cortex/joint5_max",
-									np.pi/2)
+									65535)
 
 		joint6_min = self.getParam(	self.nameSpace+"motor_cortex/joint6_min",
-									-np.pi)
+									0)
 		joint6_max = self.getParam(	self.nameSpace+"motor_cortex/joint6_max",
-									np.pi)
+									65535)
 
 		self.__timeout = self.getParam(	self.nameSpace+"motor_cortex/timeout",
 										0.1)
 
 		self.__comPort = self.getParam(	self.nameSpace+"motor_cortex/comport",
-										"/dev/ttyACM0")
+										"/dev/pts/20")
 		self.__baudrate = self.getParam(self.nameSpace+"motor_cortex/baudrate",
-										115200)
-		self.__rts = self.getParam(self.nameSpace+"motor_cortex/rts", 0)
-		self.__dtr = self.getParam(self.nameSpace+"motor_cortex/dtr", 0)
+										9600)
+		self.__rts = self.getParam(self.nameSpace+"motor_cortex/rts", 1)
+		self.__dtr = self.getParam(self.nameSpace+"motor_cortex/dtr", 1)
 
 		self.__suchartStatus = None
 		self.__goalPosition = None
@@ -78,7 +79,7 @@ class SuchartMotorCortex(NodeBase):
 													timeout = self.__timeout)
 
 		self.setFrequency(5)
-		self.__rate = self.getParam("/spinal_cord/suchart_action_frequency")
+		self.__rate = self.getParam("/spinal_cord/suchart_action_frequency",5)
 		self.__rosInitSubPubAction()
 
 
@@ -94,6 +95,8 @@ class SuchartMotorCortex(NodeBase):
 			self.__serial.open()
 		except serial.SerialException as e:
 			rospy.logwarn(str(e))
+		except IOError:
+			self.__serial=serial.Serial(self.__comPort, self.__baudrate, rtscts=True, dsrdtr=True)
 		time.sleep(0.1)
 		if not self.__serial.is_open:
 			rospy.logwarn("Serial port for lowlevel interface ("+str(self.__comPort)+") cannot be opened.")
@@ -103,14 +106,16 @@ class SuchartMotorCortex(NodeBase):
 			self.__serial.flushOutput()
 			rospy.loginfo("Connected to "+str(self.__comPort)+".")
 
-	def __rosInitSubPub(self):
+	def __rosInitSubPubAction(self):
 		self.rosInitPublisher( 	"/spinalcord/suchart_status",
 								SuchartFeedback)
-		self.__action = actionlib.SimpleActionSever(
+		self.__action = actionlib.SimpleActionServer(
 												"/spinalcord/suchart_action",
 												SuchartAction,
 											execute_cb = self.__actionCallback,
 												auto_start = False)
+		if self.__action.is_active():
+			self.__action.set_aborted()
 		self.__action.start()
 
 	def __actionCallback(self, goal):
@@ -129,10 +134,12 @@ class SuchartMotorCortex(NodeBase):
 			goalPosition = self.createGoalPositionDict(	goal.name,
 														goal.position)
 			# self.__setGoalPosition()
+			rospy.loginfo("Start go to goal position ("+str(goalPosition)+").")
 			while self.__goalPosition is not None:
 				pass
-
-			while True:
+			time.sleep(1)
+			success = False
+			while not rospy.is_shutdown():
 				if self.__suchartStatus.comunication_OK:
 					if self.__suchartStatus.is_reach_pos:
 						success = True
@@ -145,16 +152,18 @@ class SuchartMotorCortex(NodeBase):
 				r.sleep()
 
 			if success:
+				# pass
 				rospy.loginfo("Suchart reach to "+str(goalPosition))
 
 		elif goal.command.lower() == "active_gripper":
 			# self.__suchartInterface.set_GripperActive()
 			self.__gripperCommand = "active"
-
+			rospy.loginfo("Start active gripper.")
 			while self.__gripperCommand is not None:
 				pass
-
-			while True:
+			time.sleep(1)
+			success = False
+			while not rospy.is_shutdown():
 				if self.__suchartStatus.comunication_OK:
 					if self.__suchartStatus.gripper_active:
 						success = True
@@ -165,15 +174,18 @@ class SuchartMotorCortex(NodeBase):
 					success = False
 					break
 				r.sleep()
+			if success:
+				rospy.loginfo("gripper is active.")
 
 		elif goal.command.lower() == "release_gripper":
 			# self.__suchartInterface.set_GripperRelease()
 			self.__gripperCommand = "release"
-
+			rospy.loginfo("Start release gripper.")
 			while self.__gripperCommand is not None:
 				pass
-
-			while True:
+			time.sleep(1)
+			success = False
+			while not rospy.is_shutdown():
 				if self.__suchartStatus.comunication_OK:
 					if self.__suchartStatus.gripper_release:
 						success = True
@@ -184,12 +196,19 @@ class SuchartMotorCortex(NodeBase):
 					success = False
 					break
 				r.sleep()
+
+			if success:
+				rospy.loginfo("gripper is release.")
+
 		else:
 			rospy.logwarn("Unknown command \""+goal.command+"\"")
 			success = False
 
 		result = SuchartResult(is_success = success)
-		self.__action.set_succeeded(result)
+		if success:
+			self.__action.set_succeeded(result)
+		else:
+			self.__action.set_aborted(result)
 
 	def __createFeedBack(self):
 		if not self.__suchartStatus.comunication_OK:
@@ -252,5 +271,23 @@ class SuchartMotorCortex(NodeBase):
 
 			msg = self.__createFeedBack()
 			self.publish(msg)
-
 			self.sleep()
+
+	def end(self):
+		# if self.__action.is_active():
+		# 	# self.__action.set_preempted()
+		# 	self.__action.set_aborted()
+
+		self.__serial.close()
+		time.sleep(0.1)
+		if self.__serial.is_open:
+			rospy.logwarn("Cannot close "+ str(self.__serial.port))
+
+def main():
+	node = SuchartMotorCortex()
+	try:
+		node.run()
+	except rospy.ROSInterruptException:
+		pass
+	finally:
+		node.end()

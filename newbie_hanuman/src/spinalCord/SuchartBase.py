@@ -81,12 +81,10 @@ class SuchartStatus(object):
 
 		self.goalPosition ={name:pos for name,pos in zip(joint_names,goal_pos)}
 		self.currPosition ={name:pos for name,pos in zip(joint_names,curr_pos)}
-
 		self.is_reach_pos = statusPackage[RegisterAddrDict["IS_REACH_POS"]] == Reach_pos
 
 		self.gripper_active = statusPackage[RegisterAddrDict["GRIPPER_STATUS"]] == GripperStatus_active
 		self.gripper_release = statusPackage[RegisterAddrDict["GRIPPER_STATUS"]] == GripperStatus_release
-
 		self.gameStatusInitialState = statusPackage[RegisterAddrDict["GAME_STATE"]] == GameState_initial
 		self.gameStatusPlayState = statusPackage[RegisterAddrDict["GAME_STATE"]] == GameState_play
 		self.comunication_OK = True
@@ -96,8 +94,8 @@ class SuchartStatus(object):
 		names = []
 		positions = []
 		for i in range(njoint):
-			name = "joint"+str(i)
-			position = package[2*i] + package[2*i + 1]<<8
+			name = "joint"+str(i+1)
+			position = package[2*i] + package[2*i + 1]*256
 			names.append(name)
 			positions.append(position)
 		return names, positions
@@ -120,6 +118,7 @@ class SuchartProtocol(RobotisProtocol):
 			return False
 
 		if len(robotStatus_package) >= 6+numB:
+			robotStatus_package = robotStatus_package[5:-1]
 			self.__robotStatus = SuchartStatus(robotStatus_package)
 			return True
 
@@ -200,18 +199,17 @@ class SuchartProtocol(RobotisProtocol):
 			return None
 		return status == GameState_initial
 
-	def set_goalPosition(self, position):
+	def set_goalPosition(self, position, timeout = None):
 		paramN = [	RegisterAddrDict["GOAL_POS_JOINT1_L"]]
 		for i in range(6):
-			paramN.append(position[i]&255)
-			paramN.append(position[i]&(255<<8))
-
+			paramN.append(int(position[i])%256)
+			paramN.append(int(position[i])/256)
 		return self.writeNBytes(Suchart_ID, 
-								paramN)
+								paramN, timeout = timeout)
 
-	def set_gripper(self, status):
+	def set_gripper(self, status, timeout = None):
 		paramN = [RegisterAddrDict["GRIPPER_STATUS"], status]
-		return self.writeNBytes(Suchart_ID, paramN)
+		return self.writeNBytes(Suchart_ID, paramN, timeout = timeout)
 
 class SuchartInterface(object):
 
@@ -232,7 +230,7 @@ class SuchartInterface(object):
 		self.__robotStatus = None
 
 	def request_suchartStatus(self):
-		ret = self.__spinal_cord.read_AllLowLevelData():
+		ret = self.__spinal_cord.read_AllLowLevelData(timeout = self.__timeout)
 		self.__robotStatus = self.__spinal_cord.get_suchartStatus()
 		return ret, self.__robotStatus
 
@@ -242,7 +240,7 @@ class SuchartInterface(object):
 			actualPosition[n] = min(max(v, self.__jointLimit[n][0]),
 									self.__jointLimit[n][1])
 		posList = []
-		for i in range(actualPosition):
+		for i in range(len(actualPosition)):
 			jointName = "joint"+str(i+1)
 			posList.append(actualPosition[jointName])
 
@@ -252,10 +250,10 @@ class SuchartInterface(object):
 		return False
 
 	def set_GripperActive(self):
-		self.__spinal_cord.set_gripper(1)
+		self.__spinal_cord.set_gripper(1, self.__timeout)
 
 	def set_GripperRelease(self):
-		self.__spinal_cord.set_gripper(0)
+		self.__spinal_cord.set_gripper(0, self.__timeout)
 
 	def get_suchartStatus(self):
 		return self.__robotStatus

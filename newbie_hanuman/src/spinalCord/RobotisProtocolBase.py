@@ -44,7 +44,8 @@ class RobotisProtocol(SpinalCordBase):
 		package.append( self.computeChecksum(package) )
 		return package
 
-	def computeChecksum(self, package):
+	@staticmethod
+	def computeChecksum(package):
 		## compute robotis checksum
 		chksum = 0
 		for i in range(2, len(package)):

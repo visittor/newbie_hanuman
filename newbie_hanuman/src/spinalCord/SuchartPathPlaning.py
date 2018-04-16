@@ -5,6 +5,7 @@ from SuchartMotorCortex import SuchartMotorCortex as Cortex
 from newbie_hanuman.msg import SuchartFeedback
 from newbie_hanuman.msg import SuchartAction 
 from newbie_hanuman.msg import SuchartResult
+from newbie_hanuman.msg import SuchartGoal
 from newbie_hanuman.msg import SuchartPathPlaningCommandFeedback as Feedback 
 from newbie_hanuman.msg import SuchartPathPlaningCommandAction as Action
 from newbie_hanuman.msg import SuchartPathPlaningCommandResult as Result
@@ -12,6 +13,8 @@ from newbie_hanuman.msg import SuchartPathPlaningCommandGoal as Goal
 
 import rospy
 import actionlib
+
+import time
 
 class SuchartPathPlaning(NodeBase):
 	
@@ -31,12 +34,15 @@ class SuchartPathPlaning(NodeBase):
 												"/spinalcord/suchart_action",
 												SuchartAction)
 		self.__actionClient.wait_for_server()
-
+		self.__actionClient.cancel_all_goals()
 		self.__actionServer = actionlib.SimpleActionServer(
 											"/spinalcord/suchart_path_planing",
-											SuchartAction,
+											Action,
 										execute_cb = self.__actionSrvCallback,
 										auto_start = False)
+		if self.__actionServer.is_active():
+			self.__actionServer.set_aborted()
+		self.__actionServer.start()
 		self.rosInitSubscriber(	"/spinalcord/suchart_status",
 								SuchartFeedback,
 								self.__callback)
@@ -63,9 +69,8 @@ class SuchartPathPlaning(NodeBase):
 	def __reachPos(self, goal):
 		currPos = self.__suchartStatus.currPosition
 		goalPos = {name:pos for name,pos in zip(goal.goalPosition.name, goal.goalPosition.position)}
-
 		found, viaPoints = self.searchPath(currPos, goalPos)
-		nViaPoint = len(viaPoint)
+		nViaPoint = len(viaPoints)
 
 		currJoint =  Cortex.createJoitstateFromDict(currPos)
 		for i, point in enumerate(viaPoints):
@@ -75,14 +80,13 @@ class SuchartPathPlaning(NodeBase):
 								n_via_point = nViaPoint,
 								current_via_point = i)
 			self.__actionServer.publish_feedback(feedback)
-
 			goalMsg = SuchartGoal(	name = goalJoint.name,
 									position = goalJoint.position,
 									command = "reach_position")
-			self.__actionClient.send_goal(goalMsg)
+			self.__actionClient.send_goal(goalMsg, feedback_cb = self.__callback)
 			self.__actionClient.wait_for_result()
 			result = self.__actionClient.get_result()
-			if not result.is_success:
+			if not result or not result.is_success:
 				serverResult = Result(result = (found<<1)|0)
 				# self.__actionServer.set_aborted(serverResult)
 				return serverResult
@@ -107,16 +111,38 @@ class SuchartPathPlaning(NodeBase):
 		if goal.command.lower() == "reach_position":
 			result = self.__reachPos(goal)
 			if result.result&1 == 0:
+				# rospy.loginfo("Action reach goal aborted.")
 				self.__actionServer.set_aborted(result)
-			self.__actionServer.set_succeded(result)
+			# rospy.loginfo("Action reach goal succeed.")
+			self.__actionServer.set_succeeded(result)
 
 		elif goal.command.lower() == "active_gripper":
 			success = 1 if self.__activeGripper() else 0
-			self.__actionServer.set_succeded(Result(result=success))
+			rospy.loginfo("Action active_gripper succeed.")
+			self.__actionServer.set_succeeded(Result(result=success))
 
 		elif goal.command.lower() == "release_gripper":
-			success = 1 if self.__activeGripper() else 0
-			self.__actionServer.set_succeded(Result(result=success))
+			success = 1 if self.__releaseGripper() else 0
+			rospy.loginfo("Action release_gripper succeed.")
+			self.__actionServer.set_succeeded(Result(result=success))
 
 		else:
+			rospy.loginfo("Action aborted.")
 			self.__actionServer.set_aborted(Result(result=success))
+
+	def run(self):
+		rospy.spin()
+
+	def end(self):
+		self.__actionClient.cancel_all_goals()
+		# self.__actionServer.set_aborted()
+		time.sleep(0.1)
+
+def main():
+	node = SuchartPathPlaning()
+	try:
+		node.run()
+	except rospy.ROSInterruptException:
+		pass
+	finally:
+		node.end()
