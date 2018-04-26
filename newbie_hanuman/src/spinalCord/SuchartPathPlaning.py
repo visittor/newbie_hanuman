@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import numpy as np 
+import cv2
+
 from cell.nodeCell import NodeBase
 from SuchartBase import SuchartStatus, RegisterAddrDict
 from SuchartMotorCortex import SuchartMotorCortex as Cortex
@@ -15,6 +18,151 @@ import rospy
 import actionlib
 
 import time
+import sys
+
+import pprint
+
+PATH = sys.path[0]
+
+MAP = np.genfromtxt("/".join(PATH.split("/")[:]+["spinalCord/map_csv/map.csv"]), delimiter=",")
+Q1 =  np.genfromtxt("/".join(PATH.split("/")[:]+["spinalCord/map_csv/Q1.csv"]), delimiter=",")
+Q3 =  np.genfromtxt("/".join(PATH.split("/")[:]+["spinalCord/map_csv/Q3.csv"]), delimiter=",")
+
+def radToMap(q1, q3):
+	dQ1 = np.abs(Q1 - q1)
+	dQ3 = np.abs(Q3 - q3)
+	dist = dQ1 + dQ3
+	idx = np.unravel_index(np.argmin(dist, axis=None), dist.shape)
+	mapQ1 = idx[0]
+	mapQ3 = idx[1]
+	return mapQ1, mapQ3
+
+def mapTorad(q1, q3):
+	radQ1 = Q1[q1,q3]
+	radQ3 = Q3[q1,q3]
+	return radQ1, radQ3
+
+def findAdjacent(map_, p):
+	h,w = map_.shape
+
+	adjacent = []
+
+	if p[0] -1 != -1:
+		adjacent.append((p[0]-1, p[1]))
+
+	if p[1] - 1 != -1:
+		adjacent.append((p[0], p[1]-1))
+
+	if p[0] + 1 < h:
+		adjacent.append((p[0]+1, p[1]))
+
+	if p[1] + 1 < w:
+		adjacent.append((p[0], p[1]+1))
+
+	return adjacent
+
+def mapFunc(map_,q1, q3):
+	return map_[q1,q3]
+
+def computeCostFunction(agent, n):
+	return 2*np.abs(agent[0]-n[0])+np.abs(agent[1]-n[1])
+
+def computeHeuristicFunc(goal, n):
+	return 2*(np.abs(n[0]-goal[0]) + np.abs(n[1]-goal[1]))
+
+def AStar(init, goal):
+	if  mapFunc(MAP,init[0], init[1]) != 0:
+		rospy.logwarn("Invalid starting point. Initialize inside obstacle.")
+		return False, []
+
+	if  mapFunc(MAP,goal[0], goal[1]) != 0:
+		rospy.logwarn("Invalid starting point. Goal is inside obstacle.")
+		return False, []
+
+	map_ = np.zeros((MAP.shape[0],MAP.shape[1],3), dtype=np.uint8)
+	map_[:,:,0] = MAP
+	map_[:,:,1] = MAP
+	map_[:,:,2] = MAP
+
+	found = False
+
+	agent = init
+	priQ = []
+	visited = [init]
+	hashTable = {}
+	hFuncStart = np.abs(init[0]-goal[0]) + np.abs(init[1]-goal[1])
+	minCost = None
+
+	for n in findAdjacent(MAP, agent):
+		costFunc = computeCostFunction(agent, n)
+		hFunc = computeHeuristicFunc(goal, n)
+		N = (costFunc, hFunc, n)
+		if N not in visited and N not in priQ and mapFunc(MAP,n[0], n[1])==0:
+			priQ.append(N)
+			priQ.sort(key=lambda x:x[0]+x[1])
+			hashTable[N] = (0, hFunc, agent)
+
+	while len(priQ) != 0:
+		current = priQ.pop(0)
+		agent = current[2]
+		cost = current[0]
+		h = current[1]
+		visited.append(current)
+
+		if found:
+			if cost + h > minCost:
+				continue
+
+		if agent == goal:
+			found = True
+			minCost = cost + h
+			keyGoal = current
+			continue
+
+		for n in findAdjacent(MAP, agent):
+			costFunc = computeCostFunction(agent, n)
+			hFunc = computeHeuristicFunc(goal, n)
+			N = (costFunc+cost, hFunc, n)
+			# print N[0]
+			if N not in visited and N not in priQ and mapFunc(MAP,n[0],n[1])!=1:
+				priQ.append(N)
+				priQ.sort(key=lambda x:x[0]+x[1])
+				hashTable[N] = current
+		img = map_*255
+		img[init[0], init[1], :] = [255,0,0]
+		img[goal[0], goal[1], :] = [255,0,0]
+		img[agent[0], agent[1], :] = [0,0,255]
+		img = cv2.resize(img,(500,500))
+		cv2.imshow("map", img)
+		cv2.waitKey(10)
+
+	if found:
+		rospy.loginfo("Search found.")
+		path = [goal]
+		key = hashTable[keyGoal]
+		path.append(key)
+		# print key
+		map_ = map_*255
+		map_[key[2][0], key[2][1], :] = [0,255,0]
+		cv2.imshow("map", map_)
+		cv2.waitKey(1)
+
+		while True:
+			key = hashTable[key]
+			print key
+			path.append(key)
+
+			map_[key[2][0], key[2][1], :] = [0,255,0]
+			cv2.imshow("map", cv2.resize(map_,(500,500)))
+			cv2.waitKey(1)
+
+			if key[2] == init:
+				break
+		cv2.waitKey(100)
+		cv2.destroyAllWindows()
+		return found, path
+	rospy.loginfo("Search not found.")
+	return False, []
 
 class SuchartPathPlaning(NodeBase):
 	
@@ -64,6 +212,8 @@ class SuchartPathPlaning(NodeBase):
 
 	def searchPath(self, curr, goal):
 		found = 1
+		found, path = AStar((30,30), (40,20))
+		found = 1 if found else 0
 		return found, [curr, goal]
 
 	def __reachPos(self, goal):
