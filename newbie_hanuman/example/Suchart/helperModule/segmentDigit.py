@@ -19,8 +19,8 @@ def segmentDigit(img):
 	img = 255 - img
 	dilation = cv2.dilate(img,kernel,iterations = 2)
 	# print dilation.dtype
-	cv2.imshow("d", dilation)
-	cv2.waitKey(1)
+	# cv2.imshow("d", dilation)
+	# cv2.waitKey(1)
 
 	_,contours,_ = cv2.findContours(dilation, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 

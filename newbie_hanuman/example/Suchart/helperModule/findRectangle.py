@@ -22,9 +22,11 @@ def findRectangle(img, cannyLwr = 50, cannyUpr = 150, areaThr = 0.01):
 
 	ret, cnts, hier = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-	cv2.imshow("canny", img)
-	cv2.imshow("thr", thr)
-	cv2.waitKey(1)
+	
+
+	# cv2.imshow("canny", img)
+	# cv2.imshow("thr", thr)
+	# cv2.waitKey(1)
 
 	rects = []
 	if len(cnts)>0:
