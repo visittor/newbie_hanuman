@@ -17,7 +17,8 @@ def getJsPosFromName(Js, name):
 	return Js.position[indexJs]
 
 class Kinematic(KinematicModule):
-	OFF1 = 7.6
+	# OFF1 = 7.6
+	OFF1 = 7.7
 	L1 = 0.2
 	L2 = 0.3
 	H1 = 0.6
@@ -33,6 +34,7 @@ class Kinematic(KinematicModule):
 		self.posDictMsgType = suchartPostDictMsg
 
 		## Add plane
+		## TODO : re-create plane after known a exact position of robot base.
 
 		tranVec = np.array([0,0,0],float)
 		rotVec = np.array([0,0,0],float)
@@ -55,8 +57,10 @@ class Kinematic(KinematicModule):
 		self.add_plane(	"right", Hplane3, 
 						(0,10), (-5,5), (-1,1))
 
-		self.H1_left = self.getInverseHomoMat(Hplane2)
-		self.H1_right = self.getInverseHomoMat(Hplane3)
+		# self.H1_left = self.getInverseHomoMat(Hplane2)
+		# self.H1_right = self.getInverseHomoMat(Hplane3)
+		self.H1_left = Hplane2
+		self.H1_right = Hplane3
 
 		## for visualize
 		x, y = np.indices((5,5))
@@ -94,9 +98,9 @@ class Kinematic(KinematicModule):
 		q1 = getJsPosFromName(Js, "pan")
 		q2 = getJsPosFromName(Js, "tilt")
 
-		tranOffset = np.array([0,0.15,self.OFF1],float)
+		tranOffset = np.array([-0.6,-0.1,self.OFF1],float)
 		rotOffset = np.array([0,0,0],float)
-		HOffset = self.create_transformationMatrix(tranOffset, rotOffset, 'zyz')
+		HOffset = self.create_transformationMatrix(tranOffset, rotOffset, 'zyz', order = "tran-first")
 
 		rot =[	[np.sin(q1), 	np.cos(q1)*np.sin(q2),	np.cos(q1)*np.cos(q2)],
 				[-np.cos(q1),	np.sin(q1)*np.sin(q2),	np.sin(q1)*np.cos(q2)],
@@ -143,20 +147,39 @@ class Kinematic(KinematicModule):
 		self.labels = []
 		self.rects = []
 		for l, rect in zip(objMsg.labels, objMsg.rects):
-			_, center = self.__rect2CntAndCenter(rect)
-			center = self.calculate3DCoor([center])[0]
+			cnt, center = self.__rect2CntAndCenter(rect)
+			temp = self.calculate3DCoor(cnt, HCamera=H)
+			# r = [self.calculate2DCoor(i[1], i[0], HCamera=H) for i in temp if i[0] is not None]
+			# print temp
+			poly = Polygon()
+			for n, p in temp:
+				# print p
+				if n is None:
+					continue
+				p2D = self.calculate2DCoor([p], n, HCamera=H)[0]
+				if p2D is not None:
+					poly.points.append(Point32(x=p2D[0], y=p2D[1]))
+
+			center = self.calculate3DCoor([center], HCamera=H)[0]
 			fromBase = None
 			if center[0] is None:
 				pass
 			elif center[0] == "ground":
-				fromBase = center[1]
+				# center[1] = np.hstack((center[1],1))
+				center_aux = np.hstack((center[1],1)).T
+				fromBase = center[1]/10.0
 			elif center[0] == "right":
-				fromBase = np.matmul(self.H1_right, center[1])
+				center_aux = np.hstack((center[1],1)).T
+				fromBase = np.matmul(self.H1_right, center_aux)[:-1]/10.0
 			elif center[0] == "left":
-				fromBase = np.matmul(self.H1_left, center[1])
+				center_aux = np.hstack((center[1],1)).T
+				fromBase = np.matmul(self.H1_left, center_aux)[:-1]/10.0
 			self.worldCoors.append(Point32(x=fromBase[0],y=fromBase[1],z=fromBase[2]))
+			# print self.H1_right
+			# print center_aux
+			# print fromBase
 			self.labels.append(l)
-			self.rects.append(rect)
+			self.rects.append(poly)
 
 		self.point2D1 = self.calculate2DCoor(self.points, "ground", HCamera=H)
 		self.point2D1 = np.array(self.point2D1)
@@ -215,7 +238,7 @@ class Kinematic(KinematicModule):
 				# p1 = (int(p.x), int(p.y))
 				# p2 = (int(rect.points[(i+1)%4].x), int(rect.points[(i+1)%4].y))
 				# cv2.line(blank, p1, p2, (255,255,255),-1)
-			print cnt
+			# print cnt
 			cv2.drawContours(blank, [cnt.astype(int)], 0, (255,255,255), -1)
 			cv2.putText(blank, str(label), (int(cen_x),int(cen_y)),
 					cv2. FONT_HERSHEY_SIMPLEX,

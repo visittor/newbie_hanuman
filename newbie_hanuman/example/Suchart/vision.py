@@ -1,7 +1,9 @@
 from visionManager.visionModule import VisionModule
 from newbie_hanuman.msg import suchartVisionMsg
+from utility.performanceX import StopWatch
 
 from geometry_msgs.msg import Polygon, Point32
+from sensor_msgs.msg import CompressedImage
 
 import rospy
 
@@ -15,6 +17,7 @@ import os
 import sys
 
 import time
+import math
 
 from helperModule.findRectangle import findRectangle, calArea
 from helperModule.transform import four_point_transform
@@ -32,10 +35,13 @@ class ImageProcessing(VisionModule):
 		self.objectsMsgType = suchartVisionMsg
 		self.__boards = None
 
+		self.allProcess = StopWatch()
+		self.predProcess = StopWatch()
+
 		gamma = 0.8
 		self.__lookup = np.array( [ 255.0*((float(i)/255.0)**(gamma)) for i in range(256) ], dtype = np.uint8 )
 
-		fileName = "/".join(PATH.split("/")[:]+["Train1_cropImMini_SVM_model.pk1"])
+		fileName = "/".join(PATH.split("/")[:]+["final_train_cropIm.pk1"])
 		# fileName = "Train1_cropImMini_SVM_model.pk1"
 		self.__clf = joblib.load(fileName)
 
@@ -61,22 +67,24 @@ class ImageProcessing(VisionModule):
 		for rect in rects:
 			# print areaUpperThr > calArea(rect) > areaLowerThr
 			if areaUpperThr > calArea(rect) > areaLowerThr:
-				dst = four_point_transform(img, rect)
-				dst = cv2.resize(dst, (100,100))
-				binarize_image(dst)
-				dst = segmentDigit(dst)
-				if dst is None:
-					continue
-				dst = cv2.resize(dst, (50,50))
-				## Predict image here:
-				X = self.__createFeature(dst)
-				y = self.__clf.predict([X])
+				with self.allProcess:
+					dst = four_point_transform(img, rect)
+					dst = cv2.resize(dst, (100,100))
+					binarize_image(dst)
+					dst = segmentDigit(dst)
+					if dst is None:
+						continue
+					dst = cv2.resize(dst, (50,50))
+					## Predict image here:
+					X = self.__createFeature(dst)
+					with self.predProcess:
+						y = self.__clf.predict([X])
 
 				boards.append((rect, dst, y[0]))
 		# print "----"
 		return boards
 
-	def __createMsg(self, boards):
+	def __createMsg(self, boards, img):
 		rects = []
 		labels = []
 
@@ -88,6 +96,10 @@ class ImageProcessing(VisionModule):
 			labels.append(int(label))
 
 		msg = suchartVisionMsg(rects = rects, labels = labels)
+		com = CompressedImage()
+		com.format = "jpeg"
+		com.data = np.array(cv2.imencode(".jpg", img)[1]).tostring()
+		msg.img = com
 		return msg
 
 
@@ -101,14 +113,16 @@ class ImageProcessing(VisionModule):
 
 		self.__boards = self.__findBoards(gray, areaLowerThr, areaUpperThr)
 
-		msg = self.__createMsg(self.__boards)
+		msg = self.__createMsg(self.__boards, img)
 		msg.header.stamp = rospy.Time.now()
 		e2 = cv2.getTickCount()
 		self.__timePerLoop = (e2 - e1) / cv2.getTickFrequency()
 		return msg
 
 	def visualizeFunction(self, img, msg):
-		frameRate = str(1/self.__timePerLoop) if self.__timePerLoop!=0 else "inf"
+		time1 = math.ceil(self.allProcess.getAvgTime() * 1000.0)
+		time2 = math.ceil(self.predProcess.getAvgTime() * 1000.0)
+
 		for label, rect in zip(msg.labels, msg.rects):
 			cnt = np.zeros((4,1,2), dtype = int)
 			cen_x = 0
@@ -129,9 +143,30 @@ class ImageProcessing(VisionModule):
 						cv2. FONT_HERSHEY_SIMPLEX,
 						1, (0,0,255), 3)
 
-		cv2.putText(img, frameRate, (0,img.shape[0]),
+		cv2.putText(img, "process time:", (0,img.shape[0]-10),
 					cv2. FONT_HERSHEY_SIMPLEX,
 					1, (0,0,0), 7)
-		cv2.putText(img, frameRate, (0,img.shape[0]),
+		cv2.putText(img, "process time:", (0,img.shape[0]-10),
+					cv2. FONT_HERSHEY_SIMPLEX,
+					1, (255,255,255), 3)
+
+		cv2.putText(img, str(time1), (250,img.shape[0]-10),
+					cv2. FONT_HERSHEY_SIMPLEX,
+					1, (0,0,0), 7)
+		cv2.putText(img, str(time1), (250,img.shape[0]-10),
+					cv2. FONT_HERSHEY_SIMPLEX,
+					1, (255,255,255), 3)
+
+		cv2.putText(img, "predict time:", (0,20),
+					cv2. FONT_HERSHEY_SIMPLEX,
+					1, (0,0,0), 7)
+		cv2.putText(img, "predict time:", (0,20),
+					cv2. FONT_HERSHEY_SIMPLEX,
+					1, (255,255,255), 3)
+
+		cv2.putText(img, str(time2), (250,20),
+					cv2. FONT_HERSHEY_SIMPLEX,
+					1, (0,0,0), 7)
+		cv2.putText(img, str(time2), (250,20),
 					cv2. FONT_HERSHEY_SIMPLEX,
 					1, (255,255,255), 3)
