@@ -36,7 +36,7 @@ class RosInterface(object):
 			self.__feedBack = None
 			self.__result = None
 
-			self.__actFinish = None
+			self.__actFinish = True
 			self.__actSuccess = None
 			self.__inProgress = False
 
@@ -148,11 +148,11 @@ class RosInterface(object):
 
 	def interfaceWithService(self, serviceName,  serviceClass, funcName):
 		assert funcName not in self.__serviceInterface
-		assert varName not in self.__varName, varName+" already exist please choose a new name."
+		assert funcName not in self.__varName, varName+" already exist please choose a new name."
 
 		setattr(self, funcName, rospy.ServiceProxy(serviceName, serviceClass))
 		self.__serviceInterface.append(funcName)
-		self.__varName.append(varName)
+		self.__varName.append(funcName)
 
 	def interfaceWithSubscriber(self, topic, msg, varName,queue_size = 1):
 		assert varName not in self.__publisherInterface

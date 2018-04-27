@@ -82,11 +82,15 @@ class KinematicModule(object):
 	def __init__(self):
 		self.objectsMsgType = CompressedImage
 		self.posDictMsgType = Empty
+
+		self.motorCortexTopicName = None
+		self.motorCortexMsgType = None
+
 		self.__intrinsicMatrix = None
 		self.__planes = {}
 
 	@classmethod
-	def create_transformationMatrix(self, tranVec, rotVec, mode):
+	def create_transformationMatrix(self, tranVec, rotVec, mode, order="tran-first"):
 		aux = np.array([0,0,0,1], dtype=float)
 		if mode.lower() == "rot":
 			rotMat = rotVec
@@ -99,7 +103,15 @@ class KinematicModule(object):
 
 		if tranVec.shape != (3,1):
 			tranVec = tranVec.reshape(3,1)
-		H = np.hstack((rotMat, tranVec))
+
+		assert order == "tran-first" or order=="rot-first"
+
+		if order == "tran-first":
+			H = np.hstack((rotMat, tranVec))
+		elif order == "rot-first":
+			np.matmul(rotMat, tranVec, tranVec)
+			H = np.hstack((rotMat, tranVec))
+
 		H = np.vstack((H, aux))
 		return H
 
@@ -137,7 +149,7 @@ class KinematicModule(object):
 
 	@staticmethod
 	def getInverseHomoMat(H):
-		getInverseHomoMat(H)
+		return getInverseHomoMat(H)
 
 	def set_IntrinsicCameraMatrix(self, intrinMat):
 		assert intrinMat.shape == (3,3)

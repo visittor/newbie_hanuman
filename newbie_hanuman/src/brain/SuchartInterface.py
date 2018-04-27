@@ -10,6 +10,7 @@ from newbie_hanuman.msg import SuchartPathPlaningCommandFeedback as Feedback
 from newbie_hanuman.msg import SuchartPathPlaningCommandAction as Action
 from newbie_hanuman.msg import SuchartPathPlaningCommandResult as Result
 from newbie_hanuman.msg import SuchartPathPlaningCommandGoal as Goal
+from newbie_hanuman.srv import PanTiltPlannerCommand
 
 from newbie_hanuman.msg import suchartPostDictMsg
 
@@ -23,6 +24,14 @@ class SuchartRosInterface(RosInterface):
 								Goal, 
 								"pathPlaning")
 
+		self.interfaceWithService( "pantiltplannercommand",
+									PanTiltPlannerCommand,
+									"Pantilt")
+
 		self.interfaceWithPublisher("/vision_manager/kinematic_topic",
 									suchartPostDictMsg,
 									"visionManager")
+
+		self.interfaceWithPublisher("/spinalcord/suchart_status", 
+									SuchartFeedback, 
+									"motorCortex")

@@ -20,41 +20,72 @@ class SuchartMotorCortex(NodeBase):
 	def __init__(self):
 		super(SuchartMotorCortex, self).__init__("motor_cortex")
 
-		joint1_min = self.getParam(	self.nameSpace+"motor_cortex/joint1_min",
-									0)
-		joint1_max = self.getParam(	self.nameSpace+"motor_cortex/joint1_max",
-									65535)
+		joint1_min=self.getParam(self.nameSpace+"motor_cortex/joint1_min",
+									-np.pi)
+		joint1_max=self.getParam(self.nameSpace+"motor_cortex/joint1_max",
+									 np.pi)
 
-		joint2_min = self.getParam(	self.nameSpace+"motor_cortex/joint2_min",
-									0)
-		joint2_max = self.getParam(	self.nameSpace+"motor_cortex/joint2_max",
-									65535)
+		joint2_min=self.getParam(self.nameSpace+"motor_cortex/joint2_min",
+									-100)
+		joint2_max=self.getParam(self.nameSpace+"motor_cortex/joint2_max",
+									860)
 
-		joint3_min = self.getParam(	self.nameSpace+"motor_cortex/joint3_min",
-									0)
-		joint3_max = self.getParam(	self.nameSpace+"motor_cortex/joint3_max",
-									65535)
+		joint3_min=self.getParam(self.nameSpace+"motor_cortex/joint3_min",
+									-5*np.pi/6)
+		joint3_max=self.getParam(self.nameSpace+"motor_cortex/joint3_max",
+									 5*np.pi/6)
 
-		joint4_min = self.getParam(	self.nameSpace+"motor_cortex/joint4_min",
-									0)
-		joint4_max = self.getParam(	self.nameSpace+"motor_cortex/joint4_max",
-									65535)
+		joint4_min=self.getParam(self.nameSpace+"motor_cortex/joint4_min",
+									-5*np.pi/6)
+		joint4_max=self.getParam(self.nameSpace+"motor_cortex/joint4_max",
+									 5*np.pi/6)
 
-		joint5_min = self.getParam(	self.nameSpace+"motor_cortex/joint5_min",
-									0)
-		joint5_max = self.getParam(	self.nameSpace+"motor_cortex/joint5_max",
-									65535)
+		joint5_min=self.getParam(self.nameSpace+"motor_cortex/joint5_min",
+									-np.pi/9)
+		joint5_max=self.getParam(self.nameSpace+"motor_cortex/joint5_max",
+									5*np.pi/6)
 
-		joint6_min = self.getParam(	self.nameSpace+"motor_cortex/joint6_min",
-									0)
-		joint6_max = self.getParam(	self.nameSpace+"motor_cortex/joint6_max",
-									65535)
+		joint6_min=self.getParam(self.nameSpace+"motor_cortex/joint6_min",
+									-np.pi)
+		joint6_max=self.getParam(self.nameSpace+"motor_cortex/joint6_max",
+									 np.pi)
+		####################################################################
+
+		joint1reg_min=self.getParam(self.nameSpace+"motor_cortex/joint1reg_min"
+									,0)
+		joint1reg_max=self.getParam(self.nameSpace+"motor_cortex/joint1reg_max"
+									,65535)
+
+		joint2reg_min=self.getParam(self.nameSpace+"motor_cortex/joint2reg_min"
+									,0)
+		joint2reg_max=self.getParam(self.nameSpace+"motor_cortex/joint2reg_max"
+									,65535)
+
+		joint3reg_min=self.getParam(self.nameSpace+"motor_cortex/joint3reg_min"
+									,0)
+		joint3reg_max=self.getParam(self.nameSpace+"motor_cortex/joint3reg_max"
+									,65535)
+
+		joint4reg_min=self.getParam(self.nameSpace+"motor_cortex/joint4reg_min"
+									,0)
+		joint4reg_max=self.getParam(self.nameSpace+"motor_cortex/joint4reg_max"
+									,65535)
+
+		joint5reg_min=self.getParam(self.nameSpace+"motor_cortex/joint5reg_min"
+									,0)
+		joint5reg_max=self.getParam(self.nameSpace+"motor_cortex/joint5reg_max"
+									,65535)
+
+		joint6reg_min=self.getParam(self.nameSpace+"motor_cortex/joint6reg_min"
+									,0)
+		joint6reg_max=self.getParam(self.nameSpace+"motor_cortex/joint6reg_max"
+									,65535)
 
 		self.__timeout = self.getParam(	self.nameSpace+"motor_cortex/timeout",
 										0.1)
 
 		self.__comPort = self.getParam(	self.nameSpace+"motor_cortex/comport",
-										"/dev/pts/20")
+										"/dev/pts/24")
 		self.__baudrate = self.getParam(self.nameSpace+"motor_cortex/baudrate",
 										9600)
 		self.__rts = self.getParam(self.nameSpace+"motor_cortex/rts", 1)
@@ -70,13 +101,19 @@ class SuchartMotorCortex(NodeBase):
 		self.__connectSerialPort()
 
 		self.__suchartInterface = SuchartInterface(	self.__serial, 
-													[joint1_min, joint1_max],
-													[joint2_min, joint2_max], 
-													[joint3_min, joint3_max],
-													[joint4_min, joint4_max], 
-													[joint5_min, joint5_max], 
-													[joint6_min, joint6_max],
-													timeout = self.__timeout)
+											[joint1reg_min, joint1reg_max],
+											[joint2reg_min, joint2reg_max], 
+											[joint3reg_min, joint3reg_max],
+											[joint4reg_min, joint4reg_max], 
+											[joint5reg_min, joint5reg_max], 
+											[joint6reg_min, joint6reg_max],
+											[joint1_min, joint1_max],
+											[joint2_min, joint2_max], 
+											[joint3_min, joint3_max],
+											[joint4_min, joint4_max], 
+											[joint5_min, joint5_max], 
+											[joint6_min, joint6_max],
+											timeout = self.__timeout)
 
 		self.setFrequency(5)
 		self.__rate = self.getParam("/spinal_cord/suchart_action_frequency",5)
@@ -119,7 +156,7 @@ class SuchartMotorCortex(NodeBase):
 		self.__action.start()
 
 	def __actionCallback(self, goal):
-		
+
 		r = rospy.Rate(1)
 		success = False
 
@@ -213,8 +250,11 @@ class SuchartMotorCortex(NodeBase):
 	def __createFeedBack(self):
 		if not self.__suchartStatus.comunication_OK:
 			return SuchartFeedback()
-		goalPos = self.createJoitstateFromDict(self.__suchartStatus.goalPosition)
-		currPos = self.createJoitstateFromDict(self.__suchartStatus.currPosition)
+		goalPosRad = self.__suchartInterface.reg2ang(self.__suchartStatus.goalPosition)
+		currPosRad = self.__suchartInterface.reg2ang(self.__suchartStatus.currPosition)
+		
+		goalPos = self.createJoitstateFromDict(goalPosRad)
+		currPos = self.createJoitstateFromDict(currPosRad)
 		gripper_active = self.__suchartStatus.gripper_active
 		gripper_release = self.__suchartStatus.gripper_release
 		is_initial = self.__suchartStatus.gameStatusInitialState

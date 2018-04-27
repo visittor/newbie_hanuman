@@ -17,7 +17,7 @@ class SuchartSerialSim(NodeBase):
 	def __init__(self):
 		super(SuchartSerialSim, self).__init__("suchart_serial_sim")
 
-		self.__comPort = self.getParam(self.nameSpace+"motor_cortex/sim_serial_port", "/dev/pts/21")
+		self.__comPort = self.getParam(self.nameSpace+"motor_cortex/sim_serial_port", "/dev/pts/25")
 		self.__baudrate = self.getParam(self.nameSpace+"motor_cortex/baudrate", 9600)
 
 		self.__jointName = ["joint"+str(i) for i in range(6)]

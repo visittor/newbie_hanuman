@@ -213,21 +213,50 @@ class SuchartProtocol(RobotisProtocol):
 
 class SuchartInterface(object):
 
-	def __init__(self, serial, joint1Limit, joint2Limit, joint3Limit, joint4Limit, joint5Limit, joint6Limit, timeout = None):
+	def __init__(self, serial, joint1LimitReg, joint2LimitReg, joint3LimitReg, joint4LimitReg, joint5LimitReg, joint6LimitReg, joint1LimitAng, joint2LimitAng, joint3LimitAng, joint4LimitAng, joint5LimitAng, joint6LimitAng, timeout = None):
 
-		self.__jointLimit = {}
-		self.__jointLimit["joint1"] = joint1Limit
-		self.__jointLimit["joint2"] = joint2Limit
-		self.__jointLimit["joint3"] = joint3Limit
-		self.__jointLimit["joint4"] = joint4Limit
-		self.__jointLimit["joint5"] = joint5Limit
-		self.__jointLimit["joint6"] = joint6Limit
+		self.__jointLimitReg = {}
+		self.__jointLimitReg["joint1"] = joint1LimitReg
+		self.__jointLimitReg["joint2"] = joint2LimitReg
+		self.__jointLimitReg["joint3"] = joint3LimitReg
+		self.__jointLimitReg["joint4"] = joint4LimitReg
+		self.__jointLimitReg["joint5"] = joint5LimitReg
+		self.__jointLimitReg["joint6"] = joint6LimitReg
+
+		self.__jointLimitAng = {}
+		self.__jointLimitAng["joint1"] = joint1LimitAng
+		self.__jointLimitAng["joint2"] = joint2LimitAng
+		self.__jointLimitAng["joint3"] = joint3LimitAng
+		self.__jointLimitAng["joint4"] = joint4LimitAng
+		self.__jointLimitAng["joint5"] = joint5LimitAng
+		self.__jointLimitAng["joint6"] = joint6LimitAng
+
+		self.__angPerReg = {}
+		self.__regPerAng = {}
+		for n,v in self.__jointLimitReg.items():
+			limAng = self.__jointLimitAng[n]
+			self.__angPerReg[n] = float(limAng[1]-limAng[0]) / (v[1]-v[0])
+			self.__regPerAng[n] = float(v[1]-v[0]) / (limAng[1]-limAng[0])
 
 		self.__timeout = timeout
 
 		self.__spinal_cord = SuchartProtocol(serial)
 
 		self.__robotStatus = None
+
+	def angle2reg(self, value):
+		reg = {}
+		for n,v in value.items():
+			reg[n] = ((v-self.__jointLimitAng[n][0])*self.__regPerAng[n])\
+					 +self.__jointLimitReg[n][0]
+		return reg
+
+	def reg2ang(self, value):
+		ang = {}
+		for n,v in value.items():
+			ang[n] = ((v-self.__jointLimitReg[n][0])*self.__angPerReg[n])\
+					 +self.__jointLimitAng[n][0]
+		return ang
 
 	def request_suchartStatus(self):
 		ret = self.__spinal_cord.read_AllLowLevelData(timeout = self.__timeout)
@@ -236,9 +265,10 @@ class SuchartInterface(object):
 
 	def set_GoalPosition(self, pos):
 		actualPosition = {}
+		pos = self.angle2reg(pos)
 		for n, v in pos.items():
-			actualPosition[n] = min(max(v, self.__jointLimit[n][0]),
-									self.__jointLimit[n][1])
+			actualPosition[n] = min(max(v, self.__jointLimitReg[n][0]),
+									self.__jointLimitReg[n][1])
 		posList = []
 		for i in range(len(actualPosition)):
 			jointName = "joint"+str(i+1)

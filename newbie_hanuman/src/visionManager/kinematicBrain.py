@@ -22,6 +22,11 @@ class KinematicBrain(NodeBase):
 		super(KinematicBrain, self).__init__("kinematic_brain")
 		self.__occipitalMessageType = None
 		self.__posDictMessageType = None
+		self.__motorCortexTopicName = None
+		self.__motorCortexMsgType = None
+
+		self.__motorCotexMsg = None
+
 		self.__messageFilter = None
 
 		self.__kinematicFunction = lambda x,y:x
@@ -43,6 +48,10 @@ class KinematicBrain(NodeBase):
 	def setPosDictMessageType(self, msgType):
 		self.__posDictMessageType = msgType
 
+	def setMotorCortexTopic(self, msgType, topicname):
+		self.__motorCortexTopicName = topicname
+		self.__motorCortexMsgType = msgType
+
 	def setKinematicFunction(self, func):
 		self.__kinematicFunction = func
 
@@ -60,15 +69,21 @@ class KinematicBrain(NodeBase):
 								self.__posDictMessageType)
 
 	def __initMessageFilter(self):
-		rospy.Subscriber("/vision_manager/occipital_lobe_topic",
-						self.__occipitalMessageType,
-						self.ddd, 
-						queue_size=1)
+		# rospy.Subscriber("/vision_manager/occipital_lobe_topic",
+		# 				self.__occipitalMessageType,
+		# 				self.ddd, 
+		# 				queue_size=1)
 
-		rospy.Subscriber("/spinalcord/sternocleidomastoid_position",
-						JointState,
-						self.eee, 
-						queue_size=1)
+		# rospy.Subscriber("/spinalcord/sternocleidomastoid_position",
+		# 				JointState,
+		# 				self.eee, 
+		# 				queue_size=1)
+
+		if self.__motorCortexMsgType is not None and self.__motorCortexTopicName is not None:
+			rospy.Subscriber(	self.__motorCortexTopicName,
+								self.__motorCortexMsgType,
+								self.__motorCortexCallback, 
+								queue_size=1)
 
 		objSub = Subscriber("/vision_manager/occipital_lobe_topic",
 							self.__occipitalMessageType, buff_size = 2**24)
@@ -80,13 +95,16 @@ class KinematicBrain(NodeBase):
 													allow_headerless=True)
 		self.__messageFilter.registerCallback(self.__callback)
 
-	def ddd(self,msg):
-		diff = rospy.Time.now().to_sec() - msg.header.stamp.to_sec()
-		rospy.logdebug("Image   "+str(msg.header.stamp.to_sec()))
+	# def ddd(self,msg):
+	# 	diff = rospy.Time.now().to_sec() - msg.header.stamp.to_sec()
+	# 	rospy.logdebug("Image   "+str(msg.header.stamp.to_sec()))
 
-	def eee(self, msg):
-		diff = rospy.Time.now().to_sec() - msg.header.stamp.to_sec()
-		rospy.logdebug("Pantilt "+str(msg.header.stamp.to_sec()))
+	# def eee(self, msg):
+	# 	diff = rospy.Time.now().to_sec() - msg.header.stamp.to_sec()
+	# 	rospy.logdebug("Pantilt "+str(msg.header.stamp.to_sec()))
+
+	def __motorCortexCallback(self, msg):
+		self.__motorCotexMsg = msg
 
 	def debugCallback(self, objMsg, panTiltMsg):
 		# pass
@@ -96,7 +114,13 @@ class KinematicBrain(NodeBase):
 
 	def __callback(self, objMsg, panTiltMsg):
 		self.debugCallback(objMsg, panTiltMsg)
-		msg = self.__kinematicFunction(objMsg, panTiltMsg)
+		if self.__motorCortexMsgType is not None and self.__motorCortexTopicName is not None:
+			msg = self.__kinematicFunction(	objMsg, 
+											panTiltMsg, 
+											self.__motorCotexMsg)
+		else:
+			msg = self.__kinematicFunction(objMsg, panTiltMsg)
+
 		self.publish(msg)
 
 	def run(self):

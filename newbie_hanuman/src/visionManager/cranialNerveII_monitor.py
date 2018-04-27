@@ -34,12 +34,11 @@ class cranialNerveII_monitor(NodeBase):
 		print rospy.Time.now().secs - imgMsg.header.stamp.secs
 		npArray = np.fromstring(imgMsg.data, dtype=np.uint8)
 		self.__recieveImg = cv2.imdecode(npArray, 1)
-
 		## get time stamp.
 		timeStamp = imgMsg.header.stamp
 		fontFace =  cv2.FONT_HERSHEY_PLAIN
-		cv2.putText(self.__recieveImg, str(timeStamp), (10,10), fontFace, 0.9, (0,0,0), 1)
-		cv2.putText(self.__recieveImg, str(timeStamp), (10,20), fontFace, 0.9, (255,255,255), 1)
+		# cv2.putText(self.__recieveImg, str(timeStamp), (10,10), fontFace, 0.9, (0,0,0), 1)
+		# cv2.putText(self.__recieveImg, str(timeStamp), (10,20), fontFace, 0.9, (255,255,255), 1)
 
 	def run(self):
 		while not rospy.is_shutdown():
