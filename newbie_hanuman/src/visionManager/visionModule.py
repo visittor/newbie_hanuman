@@ -109,7 +109,7 @@ class KinematicModule(object):
 		if order == "tran-first":
 			H = np.hstack((rotMat, tranVec))
 		elif order == "rot-first":
-			np.matmul(rotMat, tranVec, tranVec)
+			tranVec = np.matmul(rotMat, tranVec)
 			H = np.hstack((rotMat, tranVec))
 
 		H = np.vstack((H, aux))

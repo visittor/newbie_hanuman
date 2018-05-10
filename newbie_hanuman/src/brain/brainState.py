@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import rospy
 
+from sensor_msgs.msg import JointState
+
 class ChangeBrainState(Exception):
 	def __init__(self, newStateName, *arg, **kwarg):
 		self.newStateName = str(newStateName)
@@ -131,3 +133,11 @@ class FSMBrainState(object):
 	@property
 	def currSubBrainName(self):
 		return self.__currentSubBrainName
+
+	## ROS heper function.
+	def getJointStateFromList(self, jointName, jointPos, jointVel, effort):
+		assert len(jointName) == len(jointPos)
+		return JointState(	name=jointName,
+							position=jointPos,
+							velocity=jointVel,
+							effort=effort)

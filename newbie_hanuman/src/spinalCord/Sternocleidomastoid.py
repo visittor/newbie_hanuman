@@ -119,7 +119,7 @@ class Sternocleidomastoid(NodeBase):
 		try:
 			self.__serial.open()
 		except serial.SerialException as e:
-			print "Error"
+			# print "Error"
 			rospy.logwarn(str(e))
 		time.sleep(0.0002)
 		if not self.__serial.is_open:
@@ -186,7 +186,7 @@ class Sternocleidomastoid(NodeBase):
 		retTilt = 0 if self.__tiltMotor.moveFromRad_REGACTION(tiltPosition, tiltSpeed) is None else 1
 
 		self.__panMotor.broadcastingAction()
-		print panPosition
+		# print panPosition
 		self.__lastCommand = self.__createMessage(panPosition, panSpeed, tiltPosition, tiltSpeed, retPan, retTilt)
 
 	def __createMessage(self, panPos, panSpd, tiltPs, tiltSp, retPan, retTil):
@@ -208,7 +208,7 @@ class Sternocleidomastoid(NodeBase):
 	def readPos(self):
 		panPos = self.__panMotor.get_position_rad()
 		tiltPos = self.__tiltMotor.get_position_rad()
-		print panPos, tiltPos
+		# print panPos, tiltPos
 		if panPos is not None and tiltPos is not None:
 			self.__lastestState = self.__createMessage(panPos, 0, tiltPos, 0, 1, 1)
 		else:

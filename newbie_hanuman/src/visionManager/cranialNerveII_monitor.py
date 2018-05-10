@@ -31,7 +31,7 @@ class cranialNerveII_monitor(NodeBase):
 
 	def __callback(self, imgMsg):
 		## Read buffer from data and convert it to image.
-		print rospy.Time.now().secs - imgMsg.header.stamp.secs
+		# print rospy.Time.now().secs - imgMsg.header.stamp.secs
 		npArray = np.fromstring(imgMsg.data, dtype=np.uint8)
 		self.__recieveImg = cv2.imdecode(npArray, 1)
 		## get time stamp.

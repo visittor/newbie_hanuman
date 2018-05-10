@@ -206,7 +206,7 @@ class PantiltPlanner(NodeBase):
 			derivTermPan = self.__kd*(errorPan - self.__prevError[0]) if self.__prevError is not None else 0.0
 			propTermPan = self.__kp*errorPan
 			pdPan = propTermPan - derivTermPan/(rospy.get_time() - self.__prevTime)
-			print propTermPan, derivTermPan, errorPan
+			# print propTermPan, derivTermPan, errorPan
 
 			derivTermTilt = self.__kd*(errorTilt - self.__prevError[1]) if self.__prevError is not None else 0.0
 			propTermTilt = self.__kp*errorTilt
@@ -340,7 +340,7 @@ def main():
 		print e
 		rospy.logwarn(e)
 	# except Exception as e:
-	# 	print e
+		# print e
 	# 	rospy.logwarn(e)
 	finally:
 		node.end()

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import numpy as np
+
 from SuchartBase import RegisterAddrDict, RegisterNames
 from RobotisProtocolBase import RobotisProtocol
 
@@ -11,6 +13,7 @@ from cell.nodeCell import NodeBase
 
 import time
 import serial
+import math
 
 class SuchartSerialSim(NodeBase):
 
@@ -20,7 +23,7 @@ class SuchartSerialSim(NodeBase):
 		self.__comPort = self.getParam(self.nameSpace+"motor_cortex/sim_serial_port", "/dev/pts/25")
 		self.__baudrate = self.getParam(self.nameSpace+"motor_cortex/baudrate", 9600)
 
-		self.__jointName = ["joint"+str(i) for i in range(6)]
+		self.__jointName = ["joint"+str(i+1) for i in range(6)]
 		self.__currJointPos = [0]*6
 		self.__goalJointPos = [0]*6
 		self.__isReachPos = 1
@@ -49,13 +52,13 @@ class SuchartSerialSim(NodeBase):
 			addrL = "GOAL_POS_JOINT"+str(i+1)+"_L"
 			addrH = "GOAL_POS_JOINT"+str(i+1)+"_H"
 			self.__registerVal[addrL] = self.__goalJointPos[i]%256
-			self.__registerVal[addrH] = self.__goalJointPos[i]/256
+			self.__registerVal[addrH] = (self.__goalJointPos[i]/256)%256
 
 		for i in range(6):
 			addrL = "CURR_POS_JOINT"+str(i+1)+"_L"
 			addrH = "CURR_POS_JOINT"+str(i+1)+"_H"
 			self.__registerVal[addrL] = self.__currJointPos[i]%256
-			self.__registerVal[addrH] = self.__currJointPos[i]/256
+			self.__registerVal[addrH] = (self.__currJointPos[i]/256)%256
 
 	def registerToAttr(self):
 		for i in range(6):
@@ -73,31 +76,56 @@ class SuchartSerialSim(NodeBase):
 		self.__gameState = self.__registerVal["GAME_STATE"]
 
 	def __rosInitPublisher(self):
-		self.rosInitPublisher("sim_joit_state", JointState)
+		self.rosInitPublisher("joint_states", JointState)
 
 	def __moveJoint(self):
 		self.__count = (self.__count+1)%100
-		if self.__count != 99:
-			step = 1
+		if self.__count > 10:
+			step = 10
 		else:
 			step = 1
 		isReach = 1
+		jointAng = [(-np.pi, np.pi), 
+					(-0.1, 0.82), 
+					(-5*np.pi/6, 5*np.pi/6), 
+					(-5*np.pi/6, 5*np.pi/6), 
+					(-np.pi/9, 1.1*np.pi/2), 
+					(-np.pi, np.pi)]
+		jointReg = [(0,65535)]*6
+		currMsg = [0.0]*6
 		for i,n in enumerate(self.__jointName):
 			diff = self.__currJointPos[i] - self.__goalJointPos[i]
-			if diff<-10 or diff > 10:
-				self.__currJointPos[i] += step if diff < 0 else -step
+			currMsg[i] = (self.__currJointPos[i]-jointReg[i][0])*(jointAng[i][1]-jointAng[i][0])/(jointReg[i][1]-jointReg[i][0]) + jointAng[i][0]
+			if i==1:
+				print currMsg[1]
+			if diff == 0:
+				pass
+
+			elif math.fabs(diff) < 10:
+				self.__currJointPos[i] += 1 if diff < 0 else -1
+				isReach = 0
+
+			elif math.fabs(diff) < 100:
+				self.__currJointPos[i] += 10 if diff < 0 else -10
+				isReach = 0
+
+			elif math.fabs(diff) < 1000:
+				self.__currJointPos[i] += 100 if diff < 0 else -100
+				isReach = 0
+
+			elif math.fabs(diff) < 10000:
+				self.__currJointPos[i] += 100 if diff < 0 else -100
 				isReach = 0
 
 			elif diff != 0:
-				self.__currJointPos[i] += step if diff < 0 else -step
+				self.__currJointPos[i] += 100 if diff < 0 else -100
 				isReach = 0
-
-			else:
-				pass
 		self.__isReachPos = isReach
 		self.attrToRegister()
+		# return JointState(	name = self.__jointName,
+		# 					position = self.__currJointPos)
 		return JointState(	name = self.__jointName,
-							position = self.__currJointPos)
+							position = currMsg)
 
 	def considerPackage(self, package):
 		if len(package)<4 or len(package)!=package[3]+4:
@@ -155,6 +183,7 @@ class SuchartSerialSim(NodeBase):
 				print n,v
 			print "\n"
 			msg = self.__moveJoint()
+			msg.header.stamp = rospy.Time.now()
 			self.publish(msg)
 			self.sleep()
 		rospy.loginfo("Exit serial sim.")

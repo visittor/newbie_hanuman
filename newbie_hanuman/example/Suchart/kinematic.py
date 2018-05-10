@@ -1,6 +1,8 @@
 from visionManager.visionModule import KinematicModule
 from newbie_hanuman.msg import suchartPostDictMsg, suchartVisionMsg
 
+from newbie_hanuman.msg import SuchartFeedback
+
 from geometry_msgs.msg import Polygon, Point32
 
 import rospy
@@ -18,7 +20,7 @@ def getJsPosFromName(Js, name):
 
 class Kinematic(KinematicModule):
 	# OFF1 = 7.6
-	OFF1 = 7.7
+	OFF1 = 7.9
 	L1 = 0.2
 	L2 = 0.3
 	H1 = 0.6
@@ -33,24 +35,27 @@ class Kinematic(KinematicModule):
 		self.objectsMsgType = suchartVisionMsg
 		self.posDictMsgType = suchartPostDictMsg
 
+		self.motorCortexTopicName = "/spinalcord/suchart_status"
+		self.motorCortexMsgType = SuchartFeedback
+
 		## Add plane
 		## TODO : re-create plane after known a exact position of robot base.
 
-		tranVec = np.array([0,0,0],float)
+		tranVec = np.array([-2.0,0,0.25],float)
 		rotVec = np.array([0,0,0],float)
 		Hplane1 = self.create_transformationMatrix(tranVec, rotVec, 'zyz')
 
 		self.add_plane(	"ground", Hplane1, 
 						(0,10), (-5,5), (-1,1))
 
-		tranVec = np.array([0,5,5],float)
+		tranVec = np.array([-2.0,4.75,5],float)
 		rotVec = np.array([-np.pi/2,np.pi/2,np.pi/2],float)
 		Hplane2 = self.create_transformationMatrix(tranVec, rotVec, 'zyz')
 
 		self.add_plane(	"left", Hplane2, 
 						(0,10), (-5,5), (-1,1))
 
-		tranVec = np.array([0,-5,5],float)
+		tranVec = np.array([-2.0,-4.75,5],float)
 		rotVec = np.array([-np.pi/2,-np.pi/2,np.pi/2],float)
 		Hplane3 = self.create_transformationMatrix(tranVec, rotVec, 'zyz')
 
@@ -59,6 +64,7 @@ class Kinematic(KinematicModule):
 
 		# self.H1_left = self.getInverseHomoMat(Hplane2)
 		# self.H1_right = self.getInverseHomoMat(Hplane3)
+		self.H1_ground = Hplane1
 		self.H1_left = Hplane2
 		self.H1_right = Hplane3
 
@@ -71,7 +77,7 @@ class Kinematic(KinematicModule):
 		points = np.hstack((points,z))
 		self.points = points.copy()*10
 
-		print self.points
+		# print self.points
 
 		self.point2D1 = None
 		self.point2D2 = None
@@ -93,14 +99,27 @@ class Kinematic(KinematicModule):
 		self.labels = []
 		self.rects = []
 
-	def __createHomoCam(self, Js):
+	def __processRConfig(self, rconfig):
+		if rconfig is None:
+			return 0.0
+		if not "joint1" in rconfig.currPosition.name:
+			return 0.0
+		indx = rconfig.currPosition.name.index("joint1")
+		j1 = rconfig.currPosition.position[indx]
+		return j1
+
+	def __createHomoCam(self, Js, rconfig=None):
 		## FK for camera
 		q1 = getJsPosFromName(Js, "pan")
 		q2 = getJsPosFromName(Js, "tilt")
 
-		tranOffset = np.array([-0.6,-0.1,self.OFF1],float)
-		rotOffset = np.array([0,0,0],float)
-		HOffset = self.create_transformationMatrix(tranOffset, rotOffset, 'zyz', order = "tran-first")
+		j1 = self.__processRConfig(rconfig)
+		# j1 = np.pi
+
+		tranOffset = np.array([2.5,-0.0,self.OFF1],float)
+		rotOffset = np.array([j1-np.pi,0,0],float)
+		HOffset = self.create_transformationMatrix(tranOffset, rotOffset, 'zyz', order = "rot-first")
+		# print j1
 
 		rot =[	[np.sin(q1), 	np.cos(q1)*np.sin(q2),	np.cos(q1)*np.cos(q2)],
 				[-np.cos(q1),	np.sin(q1)*np.sin(q2),	np.sin(q1)*np.cos(q2)],
@@ -128,10 +147,10 @@ class Kinematic(KinematicModule):
 		if point1 is None or point2 is None:
 			return False, point1, point2
 
-		if (-65535>=point1).any() or (point1>=65535).any():
+		if (-1000000>=point1).any() or (point1>=1000000).any():
 			return False, point1, point2
 
-		if (-65535>=point2).any() or (point2>=65535).any():
+		if (-1000000>=point2).any() or (point2>=1000000).any():
 			return False, point1, point2
 
 		point1 = point1.astype(int)
@@ -140,8 +159,8 @@ class Kinematic(KinematicModule):
 		# print ret
 		return ret, pt1, pt2
 
-	def kinematicCalculation(self, objMsg, Js):
-		H = self.__createHomoCam(Js)
+	def kinematicCalculation(self, objMsg, Js, rconfig=None):
+		H = self.__createHomoCam(Js, rconfig)
 
 		self.worldCoors = []
 		self.labels = []
@@ -163,11 +182,11 @@ class Kinematic(KinematicModule):
 			center = self.calculate3DCoor([center], HCamera=H)[0]
 			fromBase = None
 			if center[0] is None:
-				pass
+				continue
 			elif center[0] == "ground":
 				# center[1] = np.hstack((center[1],1))
 				center_aux = np.hstack((center[1],1)).T
-				fromBase = center[1]/10.0
+				fromBase = np.matmul(self.H1_ground, center_aux)[:-1]/10.0
 			elif center[0] == "right":
 				center_aux = np.hstack((center[1],1)).T
 				fromBase = np.matmul(self.H1_right, center_aux)[:-1]/10.0

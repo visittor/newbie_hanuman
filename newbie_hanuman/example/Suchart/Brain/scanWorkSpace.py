@@ -23,12 +23,15 @@ PANTILTVELO = [math.radians(45), math.radians(45)]
 PI = math.pi
 
 class ScanWorkSpace(FSMBrainState):
-	tilt,pan = np.indices((7,13))
-	tilt = (tilt*90/6).reshape(7,13,1)
-	pan = ((pan-6)*90/6).reshape(7,13,1)
+	tiltSpan, panSpan = 75, 240
+	tiltStep, panStep = 4, 13
+	tilt,pan = np.indices((tiltStep,panStep))
+	tilt = (tilt*tiltSpan/(tiltStep-1)).reshape(tiltStep,panStep,1)
+	pan = ((pan-(panStep/2))*(panSpan/2)/(panStep/2)).reshape(tiltStep,panStep,1)
 	SCAN_PATTERN = np.concatenate((pan,tilt), axis=2).reshape(-1,2)
+
 	for i,p in enumerate(SCAN_PATTERN):
-		if (p[1]/15)%2 == 1:
+		if (p[1]/(tiltSpan/(tiltStep-1)))%2 == 1:
 			SCAN_PATTERN[i,0] = -SCAN_PATTERN[i,0]
 	SCAN_PATTERN[:,1] *= -1
 	SCAN_PATTERN = np.deg2rad(SCAN_PATTERN)
@@ -41,11 +44,12 @@ class ScanWorkSpace(FSMBrainState):
 
 		self.__isFinish = False
 		# TODO : change this config to correct config.
-		turnbackPos = [-PI,0,5*PI/6,0,0,0]
+		turnbackPos = [-PI,0.0,5*PI/6,0,0,0]
 		##############################
 		self.__turnBackCommand = {	"goalPosition":JointState(name=JOINTNAME,
 														position=turnbackPos),
-									"command":"reach_position"}
+									"command":"reach_position",
+									"ignoreObstacles":False}
 
 		# TODO : change this config to appropriate config.
 		# self.__scanPattern = [ [rad(j), rad(i)] for i in range(0,-91,-15) for j in range(-90,91,15)]
@@ -118,8 +122,8 @@ class ScanWorkSpace(FSMBrainState):
 	def firstStep(self):
 		rospy.loginfo("ScanWorkSpace")
 		self.__isFinish = False
-		# self.rosInterface.pathPlaning.waitForServer()
-		# self.rosInterface.pathPlaning.setGoal(**self.__turnBackCommand)
+		self.rosInterface.pathPlaning.waitForServer()
+		self.rosInterface.pathPlaning.setGoal(**self.__turnBackCommand)
 
 		self.__timer.reset()
 		self.__state = 0
@@ -153,7 +157,7 @@ class ScanWorkSpace(FSMBrainState):
 										velocity=PANTILTVELO,
 										command=0)
 
-			self.__timer.start(1.0)
+			self.__timer.start(1.5)
 			self.__state = 1
 			self.__i += 1
 

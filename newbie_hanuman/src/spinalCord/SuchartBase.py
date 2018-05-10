@@ -95,7 +95,7 @@ class SuchartStatus(object):
 		positions = []
 		for i in range(njoint):
 			name = "joint"+str(i+1)
-			position = package[2*i] + package[2*i + 1]*256
+			position = package[2*i] + (package[2*i + 1]*256)
 			names.append(name)
 			positions.append(position)
 		return names, positions
@@ -106,6 +106,9 @@ class SuchartProtocol(RobotisProtocol):
 	def __init__(self, serial):
 		super(SuchartProtocol, self).__init__(serial)
 		self.__robotStatus = None
+
+	def ping_suchart(self, timeout = None):
+		return self.pingMotor(Suchart_ID, timeout)
 
 	def read_AllLowLevelData(self, timeout = None):
 		numB = len(RegisterNames)
@@ -257,6 +260,9 @@ class SuchartInterface(object):
 			ang[n] = ((v-self.__jointLimitReg[n][0])*self.__angPerReg[n])\
 					 +self.__jointLimitAng[n][0]
 		return ang
+
+	def ping_suchart(self):
+		return self.__spinal_cord.ping_suchart(timeout = self.__timeout)
 
 	def request_suchartStatus(self):
 		ret = self.__spinal_cord.read_AllLowLevelData(timeout = self.__timeout)

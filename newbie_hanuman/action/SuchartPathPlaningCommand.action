@@ -6,6 +6,7 @@ string REACH_POSITION = "reach_position"
 
 sensor_msgs/JointState goalPosition
 string command
+bool ignoreObstacles
 
 ---
 # result

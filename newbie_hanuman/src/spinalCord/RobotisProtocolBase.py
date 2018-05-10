@@ -51,7 +51,7 @@ class RobotisProtocol(SpinalCordBase):
 		for i in range(2, len(package)):
 			chksum += package[i]
 		chksum %= 256
-		return 255 - chksum
+		return (255 - chksum)%256
 
 	def writeNBytes(self, id_, paramN, timeout = None):
 		'''

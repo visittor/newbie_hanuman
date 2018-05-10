@@ -11,3 +11,4 @@ newbie_hanuman/extSrc/extractFeature/wekaData/
 *.arff
 *.pk1
 CMakeLists.txt
+.stl

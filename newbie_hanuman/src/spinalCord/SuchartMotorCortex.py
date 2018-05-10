@@ -14,6 +14,7 @@ from cell.nodeCell import NodeBase
 
 import time
 import serial
+from math import radians as rad
 
 class SuchartMotorCortex(NodeBase):
 
@@ -28,64 +29,64 @@ class SuchartMotorCortex(NodeBase):
 		joint2_min=self.getParam(self.nameSpace+"motor_cortex/joint2_min",
 									-100)
 		joint2_max=self.getParam(self.nameSpace+"motor_cortex/joint2_max",
-									860)
+									580)
 
 		joint3_min=self.getParam(self.nameSpace+"motor_cortex/joint3_min",
-									-5*np.pi/6)
+									-3*np.pi/4)
 		joint3_max=self.getParam(self.nameSpace+"motor_cortex/joint3_max",
-									 5*np.pi/6)
+									 3*np.pi/4)
 
 		joint4_min=self.getParam(self.nameSpace+"motor_cortex/joint4_min",
-									-5*np.pi/6)
+									-3*np.pi/4)
 		joint4_max=self.getParam(self.nameSpace+"motor_cortex/joint4_max",
-									 5*np.pi/6)
+									 3*np.pi/4)
 
 		joint5_min=self.getParam(self.nameSpace+"motor_cortex/joint5_min",
-									-np.pi/9)
+									-np.pi/6)
 		joint5_max=self.getParam(self.nameSpace+"motor_cortex/joint5_max",
-									5*np.pi/6)
+									np.pi/2)
 
 		joint6_min=self.getParam(self.nameSpace+"motor_cortex/joint6_min",
-									-np.pi)
+									-np.pi/4)
 		joint6_max=self.getParam(self.nameSpace+"motor_cortex/joint6_max",
-									 np.pi)
+									 np.pi/4)
 		####################################################################
 
 		joint1reg_min=self.getParam(self.nameSpace+"motor_cortex/joint1reg_min"
 									,0)
 		joint1reg_max=self.getParam(self.nameSpace+"motor_cortex/joint1reg_max"
-									,65535)
+									,360)
 
 		joint2reg_min=self.getParam(self.nameSpace+"motor_cortex/joint2reg_min"
 									,0)
 		joint2reg_max=self.getParam(self.nameSpace+"motor_cortex/joint2reg_max"
-									,65535)
+									,680)
 
 		joint3reg_min=self.getParam(self.nameSpace+"motor_cortex/joint3reg_min"
 									,0)
 		joint3reg_max=self.getParam(self.nameSpace+"motor_cortex/joint3reg_max"
-									,65535)
+									,270)
 
 		joint4reg_min=self.getParam(self.nameSpace+"motor_cortex/joint4reg_min"
 									,0)
 		joint4reg_max=self.getParam(self.nameSpace+"motor_cortex/joint4reg_max"
-									,65535)
+									,270)
 
 		joint5reg_min=self.getParam(self.nameSpace+"motor_cortex/joint5reg_min"
 									,0)
 		joint5reg_max=self.getParam(self.nameSpace+"motor_cortex/joint5reg_max"
-									,65535)
+									,120)
 
 		joint6reg_min=self.getParam(self.nameSpace+"motor_cortex/joint6reg_min"
 									,0)
 		joint6reg_max=self.getParam(self.nameSpace+"motor_cortex/joint6reg_max"
-									,65535)
+									,90)
 
 		self.__timeout = self.getParam(	self.nameSpace+"motor_cortex/timeout",
 										0.1)
 
 		self.__comPort = self.getParam(	self.nameSpace+"motor_cortex/comport",
-										"/dev/pts/24")
+										"/dev/pts/26")
 		self.__baudrate = self.getParam(self.nameSpace+"motor_cortex/baudrate",
 										9600)
 		self.__rts = self.getParam(self.nameSpace+"motor_cortex/rts", 1)
@@ -115,10 +116,14 @@ class SuchartMotorCortex(NodeBase):
 											[joint6_min, joint6_max],
 											timeout = self.__timeout)
 
+		self.initSuchart()
 		self.setFrequency(5)
 		self.__rate = self.getParam("/spinal_cord/suchart_action_frequency",5)
 		self.__rosInitSubPubAction()
 
+	def initSuchart(self):
+		if self.__suchartInterface.ping_suchart() is None:
+			rospy.logwarn("Cannot ping Suchart.")
 
 	def __connectSerialPort(self):
 		if self.__serial.is_open:
@@ -252,13 +257,15 @@ class SuchartMotorCortex(NodeBase):
 			return SuchartFeedback()
 		goalPosRad = self.__suchartInterface.reg2ang(self.__suchartStatus.goalPosition)
 		currPosRad = self.__suchartInterface.reg2ang(self.__suchartStatus.currPosition)
-		
+		# currPosRad = self.__suchartStatus.currPosition
 		goalPos = self.createJoitstateFromDict(goalPosRad)
 		currPos = self.createJoitstateFromDict(currPosRad)
 		gripper_active = self.__suchartStatus.gripper_active
 		gripper_release = self.__suchartStatus.gripper_release
 		is_initial = self.__suchartStatus.gameStatusInitialState
 		is_play = self.__suchartStatus.gameStatusPlayState
+
+		# print currPos
 
 		feedback = SuchartFeedback(	goalPosition = goalPos,
 									currPosition = currPos,

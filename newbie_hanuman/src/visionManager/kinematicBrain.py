@@ -39,6 +39,8 @@ class KinematicBrain(NodeBase):
 		self.setPosDictMessageType(self.__module.posDictMsgType)
 		self.setKinematicFunction(self.__module.kinematicCalculation)
 		self.setKinematicLoop(self.__module.loop)
+		self.setMotorCortexTopic(self.__module.motorCortexMsgType, 
+								 self.__module.motorCortexTopicName)
 		self.__rosInit()
 		self.setFrequency(60)
 
