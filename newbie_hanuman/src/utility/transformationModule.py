@@ -7,6 +7,7 @@ def Project2Dto3D(point, HomoMat, intrinMat):
 	invHomo = getInverseHomoMat(HomoMat)
 
 	Cpoint_3 = np.matmul(invHomo, np.array([0,0,0,1]) )[:3]
+	z_plane_cam = np.matmul(invHomo, np.array([0,0,1,1]))[:3]
 
 	invIntrin = np.linalg.inv(intrinMat)
 
@@ -19,6 +20,10 @@ def Project2Dto3D(point, HomoMat, intrinMat):
 
 	unitVec = pPoint_3 - Cpoint_3
 	unitVec /= np.linalg.norm(unitVec)
+
+	if np.dot(unitVec, z_plane_cam) > 0:
+		print np.dot(unitVec, z_plane_cam)
+		return None
 
 	lambdaVal = -(Cpoint_3[2] / unitVec[2])
 

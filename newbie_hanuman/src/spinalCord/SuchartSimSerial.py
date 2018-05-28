@@ -86,12 +86,17 @@ class SuchartSerialSim(NodeBase):
 			step = 1
 		isReach = 1
 		jointAng = [(-np.pi, np.pi), 
-					(-0.1, 0.82), 
-					(-5*np.pi/6, 5*np.pi/6), 
-					(-5*np.pi/6, 5*np.pi/6), 
-					(-np.pi/9, 1.1*np.pi/2), 
+					(-0.1, 0.58), 
+					(-3*np.pi/4, 3*np.pi/4), 
+					(-3*np.pi/4, 3*np.pi/4), 
+					(-np.pi/6, np.pi/2), 
 					(-np.pi, np.pi)]
-		jointReg = [(0,65535)]*6
+		jointReg = [(0,360),
+					(0,680),
+					(0,270),
+					(0,270),
+					(0,120),
+					(0,90)]
 		currMsg = [0.0]*6
 		for i,n in enumerate(self.__jointName):
 			diff = self.__currJointPos[i] - self.__goalJointPos[i]

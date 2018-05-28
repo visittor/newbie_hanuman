@@ -15,32 +15,32 @@ class Test1(FSMBrainState):
 		super(Test1, self).__init__("Test1")
 		self.__jointName = ["joint"+str(i+1) for i in range(6)]
 		print self.__jointName
-		position1 = [-PI, 100, 0.0, 0.0, 0.0, 0.0]
+		position1 = [0.0, 350.0, 3*PI/4, 0.0, 0.0, 0.0]
 		# position1 = [-PI,0,5*PI/6,0,0,0]
-		position2 = [0.0, 200.0, 0.0, 0.0, 0.0, 0.0]
-		position3 = [PI,300, 0.0, 0.0, 0.0, 0.0]
+		position2 = [0.0, 350.0,-3*PI/4, 0.0, 0.0, 0.0]
+		# position3 = [PI,300, 0.0, 0.0, 0.0, 0.0]
 		# position4 = [PI,0,5*PI/6,0,0,0]
 		self.__timer = Timer()
 		self.__pattern = [
 						{"goalPosition":JointState(	name=self.__jointName,
 													position=position1),
 						"command":"reach_position",
-						"ignoreObstacles":True},
+						"ignoreObstacles":False},
 						# {"command":"active_gripper"},
 						{"goalPosition":JointState(	name=self.__jointName,
 													position=position2),
 						 "command":"reach_position",
-						 "ignoreObstacles":True},
+						 "ignoreObstacles":False},
 						 # {"command":"release_gripper"}
-						{"goalPosition":JointState(	name=self.__jointName,
-													position=position3),
-						"command":"reach_position",
-						"ignoreObstacles":True},
+						# {"goalPosition":JointState(	name=self.__jointName,
+						# 							position=position3),
+						# "command":"reach_position",
+						# "ignoreObstacles":True},
 
-						{"goalPosition":JointState(	name=self.__jointName,
-													position=position2),
-						"command":"reach_position",
-						"ignoreObstacles":True},
+						# {"goalPosition":JointState(	name=self.__jointName,
+						# 							position=position2),
+						# "command":"reach_position",
+						# "ignoreObstacles":True},
 						]
 		self.__i = 0
 

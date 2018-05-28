@@ -31,7 +31,7 @@ Q1 =  np.genfromtxt("/".join(PATH.split("/")[:]+["spinalCord/map_csv/Q1.csv"]), 
 Q3 =  np.genfromtxt("/".join(PATH.split("/")[:]+["spinalCord/map_csv/Q3.csv"]), delimiter=",")
 
 indxLaser = np.where(MAP == 2)
-MAP[indxLaser] = 0
+MAP[indxLaser] = 1
 
 indx = np.where(MAP==1)
 Q1[indx] = np.inf
@@ -60,7 +60,7 @@ POTEN_MAP = createPotentialMap(MAP.astype(np.uint8))
 max_ = np.amax(np.abs(POTEN_MAP), axis=None)
 POTEN_MAP = POTEN_MAP/max_
 POTEN_MAP[np.where(POTEN_MAP>=0)] = 1
-
+print POTEN_MAP.shape, MAP.shape
 # plt.imshow(POTEN_MAP, cmap="hot")
 # plt.show()
 
@@ -106,32 +106,34 @@ def mapFunc(map_,q1, q3):
 	return map_[q1,q3]
 
 def computeCostFunction(agent, n):
-	return np.abs(agent[0]-n[0])+np.abs(agent[1]-n[1])
+	K = 0 if POTEN_MAP[n[0],n[1]]>POTEN_MAP[agent[0],agent[1]] else 0
+	return np.abs(agent[0]-n[0])+np.abs(agent[1]-n[1]) + K
 
 def computeHeuristicFunc(goal, n):
-	return (np.abs(n[0]-goal[0]) + np.abs(n[1]-goal[1])) + 10.0*POTEN_MAP[n[1],n[0]]
+	# return np.abs(n[0]-goal[0]) + np.abs(n[1]-goal[1])
+	return (np.abs(n[0]-goal[0]) + np.abs(n[1]-goal[1]))
 
-def AStar(init, goal):
-	map_ = np.zeros((MAP.shape[0],MAP.shape[1],3), dtype=np.uint8)
-	map_[:,:,0] = MAP.copy()
-	map_[:,:,1] = MAP.copy()
-	map_[:,:,2] = MAP.copy()
+def AStar(init, goal, Map):
+	map_ = np.zeros((Map.shape[0],MAP.shape[1],3), dtype=np.uint8)
+	map_[:,:,0] = Map.copy()
+	map_[:,:,1] = Map.copy()
+	map_[:,:,2] = Map.copy()
 	map_ *= 255
 
-	if  mapFunc(MAP,init[0], init[1]) != 0:
+	if  mapFunc(Map,init[0], init[1]) != 0:
 		rospy.logwarn("Invalid starting point. Initial point inside obstacle.("+str(init)+")")
 		map_[init[0], init[1]] = [0,0,255]
-		cv2.imshow("map", cv2.resize(map_,(500,500),interpolation=cv2.INTER_NEAREST))
-		cv2.waitKey(1000)
-		cv2.destroyAllWindows()
+		# cv2.imshow("map", cv2.resize(map_,(500,500),interpolation=cv2.INTER_NEAREST))
+		# cv2.waitKey(1000)
+		# cv2.destroyAllWindows()
 		return False, []
 
-	if  mapFunc(MAP,goal[0], goal[1]) != 0:
+	if  mapFunc(Map,goal[0], goal[1]) != 0:
 		rospy.logwarn("Invalid starting point. Goal is inside obstacle.("+str(goal)+")")
 		map_[goal[0], goal[1]] = [0,0,255]
-		cv2.imshow("map", cv2.resize(map_,(500,500),interpolation=cv2.INTER_NEAREST))
-		cv2.waitKey(1000)
-		cv2.destroyAllWindows()
+		# cv2.imshow("map", cv2.resize(map_,(500,500),interpolation=cv2.INTER_NEAREST))
+		# cv2.waitKey(1000)
+		# cv2.destroyAllWindows()
 		return False, []
 
 	found = False
@@ -143,21 +145,24 @@ def AStar(init, goal):
 	hFuncStart = np.abs(init[0]-goal[0]) + np.abs(init[1]-goal[1])
 	minCost = None
 
-	for n in findAdjacent(MAP, agent):
+	for n in findAdjacent(Map, agent):
 		costFunc = computeCostFunction(agent, n)
 		hFunc = computeHeuristicFunc(goal, n)
 		N = (costFunc, hFunc, n)
-		if N not in visited and N not in priQ and mapFunc(MAP,n[0], n[1])==0:
+		if n not in visited and N not in priQ and mapFunc(Map,n[0], n[1])==0:
 			priQ.append(N)
 			priQ.sort(key=lambda x:x[0]+x[1])
-			hashTable[N] = (0, hFunc, agent)
+			hashTable[N] = (0, 0, agent)
+	if init == goal:
+		keyGoal = N
+		priQ = []
 	## A* search.
 	while len(priQ) != 0:
 		current = priQ.pop(0)
 		agent = current[2]
 		cost = current[0]
 		h = current[1]
-		visited.append(current)
+		visited.append(agent)
 
 		if found:
 			if cost + h > minCost:
@@ -169,17 +174,17 @@ def AStar(init, goal):
 			keyGoal = current
 			continue
 
-		for n in findAdjacent(MAP, agent):
+		for n in findAdjacent(Map, agent):
 			costFunc = computeCostFunction(agent, n)
 			hFunc = computeHeuristicFunc(goal, n)
 			direc1 = findDirection(agent, n)
 			direc2 = findDirection(hashTable[current][2], agent)
-			# gain = 1
-			# if direc1 != direc2:
-			# 	gain = 1.1
-			N = (costFunc+cost, 1.1*hFunc, n)
+			gain = 0
+			if direc1 != direc2:
+				gain = 1.1
+			N = (costFunc+cost, hFunc*gain+gain*1, n)
 			# print N[0]
-			if N not in visited and N not in priQ and mapFunc(MAP,n[0],n[1])!=1:
+			if n not in visited and N not in priQ and mapFunc(Map,n[0],n[1])!=1:
 				priQ.append(N)
 				priQ.sort(key=lambda x:x[0]+x[1])
 				hashTable[N] = current
@@ -188,9 +193,9 @@ def AStar(init, goal):
 		img[goal[0], goal[1], :] = [255,0,0]
 		img[agent[0], agent[1], :] = [0,0,255]
 		map_[agent[0], agent[1], :] = 127
-		img = cv2.resize(img,(500,500),interpolation=cv2.INTER_NEAREST)
-		cv2.imshow("map", img)
-		cv2.waitKey(1)
+		# img = cv2.resize(img,(500,500),interpolation=cv2.INTER_NEAREST)
+		# cv2.imshow("map", img)
+		# cv2.waitKey(1)
 	## creat path.
 	if found:
 		rospy.loginfo("Search found.")
@@ -203,10 +208,12 @@ def AStar(init, goal):
 		# print key
 		# map_ = map_*255
 		map_[key[2][0], key[2][1], :] = [0,127,0]
-		cv2.imshow("map", map_)
-		cv2.waitKey(1)
+		# cv2.imshow("map", map_)
+		# cv2.waitKey(1)
 
 		while True:
+			if key[2] == init:
+				break 
 			key = hashTable[key]
 			# print key
 			# print start,end,key[2]
@@ -222,11 +229,9 @@ def AStar(init, goal):
 			path.append(key[2])
 
 			map_[key[2][0], key[2][1], :] = [0,127,0]
-			cv2.imshow("map", cv2.resize(map_,(500,500),interpolation=cv2.INTER_NEAREST))
-			cv2.waitKey(10)
+			# cv2.imshow("map", cv2.resize(map_,(500,500),interpolation=cv2.INTER_NEAREST))
+			# cv2.waitKey(10)
 
-			if key[2] == init:
-				break 	
 		reducPath.append(init)
 		print len(reducPath)
 		# print path
@@ -234,7 +239,7 @@ def AStar(init, goal):
 			map_[p[0], p[1], :] = [0,255,0]
 		cv2.imshow("map", cv2.resize(map_,(500,500),interpolation=cv2.INTER_NEAREST))
 		cv2.waitKey(1000)
-		time.sleep(5)
+		time.sleep(3)
 		cv2.destroyAllWindows()
 		return found, reducPath[::-1]
 	rospy.loginfo("Search not found.")
@@ -304,7 +309,8 @@ class SuchartPathPlaning(NodeBase):
 		init = radToMap(curr["joint1"],curr["joint3"])
 		g = radToMap(goal["joint1"],goal["joint3"])
 		found, path = AStar(init, 
-							g)
+							g,
+							MAP)
 		if found:
 			for p in path:
 				j = {}

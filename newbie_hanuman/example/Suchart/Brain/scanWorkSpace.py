@@ -24,7 +24,7 @@ PI = math.pi
 
 class ScanWorkSpace(FSMBrainState):
 	tiltSpan, panSpan = 75, 240
-	tiltStep, panStep = 4, 13
+	tiltStep, panStep = 6, 13
 	tilt,pan = np.indices((tiltStep,panStep))
 	tilt = (tilt*tiltSpan/(tiltStep-1)).reshape(tiltStep,panStep,1)
 	pan = ((pan-(panStep/2))*(panSpan/2)/(panStep/2)).reshape(tiltStep,panStep,1)
@@ -44,7 +44,7 @@ class ScanWorkSpace(FSMBrainState):
 
 		self.__isFinish = False
 		# TODO : change this config to correct config.
-		turnbackPos = [-PI,0.0,5*PI/6,0,0,0]
+		turnbackPos = [-PI,100.0,3*PI/4,0,0,0]
 		##############################
 		self.__turnBackCommand = {	"goalPosition":JointState(name=JOINTNAME,
 														position=turnbackPos),
@@ -67,7 +67,7 @@ class ScanWorkSpace(FSMBrainState):
 		return math.sqrt( (p1.x-p2.x)**2 + (p1.y-p2.y)**2 + (p1.z-p2.z)**2 )
 
 	def __addNewCooboard(self, center, label):
-		minDist = 0.05 #0.5 decimetre or 0.05 metre or 5 centimetre
+		minDist = 0.075 #0.5 decimetre or 0.05 metre or 5 centimetre
 		found = False
 		I = None
 		for i,v in  enumerate(self.__coorBoard):
@@ -157,7 +157,7 @@ class ScanWorkSpace(FSMBrainState):
 										velocity=PANTILTVELO,
 										command=0)
 
-			self.__timer.start(1.5)
+			self.__timer.start(2.0)
 			self.__state = 1
 			self.__i += 1
 

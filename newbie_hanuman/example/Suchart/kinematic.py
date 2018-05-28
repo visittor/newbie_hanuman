@@ -20,7 +20,7 @@ def getJsPosFromName(Js, name):
 
 class Kinematic(KinematicModule):
 	# OFF1 = 7.6
-	OFF1 = 7.9
+	OFF1 = 7.6
 	L1 = 0.2
 	L2 = 0.3
 	H1 = 0.6
@@ -41,21 +41,21 @@ class Kinematic(KinematicModule):
 		## Add plane
 		## TODO : re-create plane after known a exact position of robot base.
 
-		tranVec = np.array([-2.0,0,0.25],float)
+		tranVec = np.array([-2.5,0,0.25],float)
 		rotVec = np.array([0,0,0],float)
 		Hplane1 = self.create_transformationMatrix(tranVec, rotVec, 'zyz')
 
 		self.add_plane(	"ground", Hplane1, 
 						(0,10), (-5,5), (-1,1))
 
-		tranVec = np.array([-2.0,4.75,5],float)
+		tranVec = np.array([-2.5,4.75,5],float)
 		rotVec = np.array([-np.pi/2,np.pi/2,np.pi/2],float)
 		Hplane2 = self.create_transformationMatrix(tranVec, rotVec, 'zyz')
 
 		self.add_plane(	"left", Hplane2, 
 						(0,10), (-5,5), (-1,1))
 
-		tranVec = np.array([-2.0,-4.75,5],float)
+		tranVec = np.array([-2.5,-4.75,5],float)
 		rotVec = np.array([-np.pi/2,-np.pi/2,np.pi/2],float)
 		Hplane3 = self.create_transformationMatrix(tranVec, rotVec, 'zyz')
 

@@ -35,6 +35,10 @@ class ImageProcessing(VisionModule):
 		self.objectsMsgType = suchartVisionMsg
 		self.__boards = None
 
+		path = "/".join(PATH.split("/")[:]+["output_matrix.npz"])
+		self.mtx = np.load(path)["camera_matrix"]
+		self.dist = np.load(path)["distortion_ceff"]
+
 		self.allProcess = StopWatch()
 		self.predProcess = StopWatch()
 
@@ -106,6 +110,9 @@ class ImageProcessing(VisionModule):
 	def ImageProcessingFunction(self, img, header):
 		e1 = cv2.getTickCount()
 		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+		h,w = gray.shape
+		newcameramtx, roi=cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w,h), 1, (w,h))
+		gray = cv2.undistort(gray, self.mtx, self.dist, None, newcameramtx)
 		gray = self.__enchantImage(gray)
 
 		areaLowerThr = 0.0035*gray.shape[0]*gray.shape[1]
@@ -120,6 +127,10 @@ class ImageProcessing(VisionModule):
 		return msg
 
 	def visualizeFunction(self, img, msg):
+		h,w,_ = img.shape
+		# newcameramtx, roi=cv2.getOptimalNewCameraMatrix(self.mtx, self.dist, (w,h), 1, (w,h))
+		# cv2.undistort(img, self.mtx, self.dist,, newcameramtx)
+
 		time1 = math.ceil(self.allProcess.getAvgTime() * 1000.0)
 		time2 = math.ceil(self.predProcess.getAvgTime() * 1000.0)
 

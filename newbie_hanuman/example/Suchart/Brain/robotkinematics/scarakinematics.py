@@ -99,22 +99,28 @@ class SCARAKinematics(object):
 				temp_H = np.matmul(H[:,:,i-1],A_n)
 				H[:,:,i] = temp_H
 		
+		for i in range(n):
+			H[:,:,i] = np.matmul(self.robot.base_frame,H[:,:,i])
+
 		H_e = H[:,:,n-1]
 		R_e = H_e[0:3,0:3]
 		p_e = H_e[0:3,3]
 		
 		return (H,H_e,R_e,p_e)
 
-	def inverseKinematicsCalculate(self,position,orientation,type_of_orientation,q_previous):
+	def inverseKinematicsCalculate(self,position,orientation,type_of_orientation,q_previous,option=1):
+		position = position - self.robot.base_frame[0:3,3]
+
 		if(type_of_orientation == "rpy"):
 			R_e = self.orientationRPY(orientation)
 		elif(type_of_orientation == "zyz"):
 			R_e = self.orientationZYZ(orientation)
+			# print(R_e)
 		# End-effector to wrist
 		pos_wrist = (position.reshape(-1,1) - self.robot.h67*np.matmul(R_e[0:3,0:3],np.array([[0],[0],[1]])) + np.array([[0],[0],[self.robot.h5]]))
-		q2 = pos_wrist[2] - self.robot.h1 - self.robot.h2 - self.robot.h3 - self.robot.h4
+		q2 = pos_wrist[2] - self.robot.h2 - self.robot.h3 - self.robot.h4
+		c3 = ((pos_wrist[0]**2 + pos_wrist[1]**2 - self.robot.l3**2 - (self.robot.l2+self.robot.l1)**2)/(2*self.robot.l3*(self.robot.l2+self.robot.l1)))
 
-		c3 = ((pos_wrist[0]**2 + pos_wrist[1]**2 - self.robot.l3**2 - (self.robot.l2 - self.robot.l1)**2)/(2*self.robot.l3*(self.robot.l2-self.robot.l1)))
 
 		if(not np.isnan(np.sqrt(1-(c3**2)))):
 
@@ -124,22 +130,23 @@ class SCARAKinematics(object):
 			q3_A = np.arctan2(s3_positive,c3)
 			q3_B = np.arctan2(s3_negative,c3)
 
-			s1_positive = (-self.robot.l3*s3_positive)*pos_wrist[0] + ((self.robot.l2-self.robot.l1) + self.robot.l3*c3)*pos_wrist[1]
-			s1_negative = (-self.robot.l3*s3_negative)*pos_wrist[0] + ((self.robot.l2-self.robot.l1) + self.robot.l3*c3)*pos_wrist[1]
+			s1_positive = (-self.robot.l3*s3_positive)*pos_wrist[0] + ((self.robot.l2+self.robot.l1) + self.robot.l3*c3)*pos_wrist[1]
+			s1_negative = (-self.robot.l3*s3_negative)*pos_wrist[0] + ((self.robot.l2+self.robot.l1) + self.robot.l3*c3)*pos_wrist[1]
 
-			c1_positive = ((self.robot.l2-self.robot.l1)+(self.robot.l3*c3))*pos_wrist[0] + (self.robot.l3*s3_positive)*pos_wrist[1]
-			c1_negative = ((self.robot.l2-self.robot.l1)+(self.robot.l3*c3))*pos_wrist[0] + (self.robot.l3*s3_negative)*pos_wrist[1]
+			c1_positive = ((self.robot.l2+self.robot.l1)+(self.robot.l3*c3))*pos_wrist[0] + (self.robot.l3*s3_positive)*pos_wrist[1]
+			c1_negative = ((self.robot.l2+self.robot.l1)+(self.robot.l3*c3))*pos_wrist[0] + (self.robot.l3*s3_negative)*pos_wrist[1]
 			
 			q1_A = np.arctan2(s1_positive,c1_positive)
 			q1_B = np.arctan2(s1_negative,c1_negative)
-			q_wrist_pos_A = np.array([0,q1_A,q2,q3_A,0,0,0])
-			q_wrist_pos_B = np.array([0,q1_B,q2,q3_B,0,0,0])
+
+			q_wrist_pos_A = np.array([q1_A,q2,q3_A,0,0,0])
+			q_wrist_pos_B = np.array([q1_B,q2,q3_B,0,0,0])
 
 			H_A = self.forwardKinematics(q_wrist_pos_A)[0]
 			H_B = self.forwardKinematics(q_wrist_pos_B)[0]
 			
-			R_04_A = H_A[0:3,0:3,3]
-			R_04_B = H_B[0:3,0:3,3]
+			R_04_A = H_A[0:3,0:3,2]
+			R_04_B = H_B[0:3,0:3,2]
 
 			R_47_A = np.matmul(np.transpose(R_04_A),R_e[:3,:3])
 			R_47_B = np.matmul(np.transpose(R_04_B),R_e[:3,:3])
@@ -179,45 +186,97 @@ class SCARAKinematics(object):
 			q6_Bb = np.arctan2(-r32_B/sq_Bb,r31_B/sq_Bb);
 
 			# Result of 4 Configuration
-			q_1 = np.array([0,q1_A,q2,q3_A,q4_Aa,q5_Aa,q6_Aa]).T
-			q_2 = np.array([0,q1_A,q2,q3_A,q4_Ab,q5_Ab,q6_Ab]).T
+			q_1 = np.array([q1_A[0],q2[0],q3_A[0],q4_Aa,q5_Aa,q6_Aa]).T
+			q_2 = np.array([q1_A[0],q2[0],q3_A[0],q4_Ab,q5_Ab,q6_Ab]).T
 
-			q_3 = np.array([0,q1_B,q2,q3_B,q4_Ba,q5_Ba,q6_Ba]).T
-			q_4 = np.array([0,q1_B,q2,q3_B,q4_Bb,q5_Bb,q6_Bb]).T
+			q_3 = np.array([q1_B[0],q2[0],q3_B[0],q4_Ba,q5_Ba,q6_Ba]).T
+			q_4 = np.array([q1_B[0],q2[0],q3_B[0],q4_Bb,q5_Bb,q6_Bb]).T
 			
 			q = np.vstack((q_1,q_2,q_3,q_4))
-
-			q = self._check_best_configure(q,q_previous)
+			# print(q)
+			q = self._check_best_configure(q,q_previous,option)
 
 			return q
 		else:
 			return None
 
-	def _check_best_configure(self,q,q_previous):
+	def createPotentialMap(map_):
+		_,cnts,_ = cv2.findContours(self,map_,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+		# print len(cnts)
+		potens = []
+		for cnt in cnts:
+			potenMap = np.zeros(map_.shape, dtype=float)
+			for y in range(map_.shape[0]):
+				for x in range(map_.shape[1]):
+					potenMap[y,x] = cv2.pointPolygonTest(cnt, (x,y), True)
+			potens.append(potenMap.copy())
+
+		PotentialMap = np.zeros(map_.shape, dtype=float)
+		PotentialMap = potens[0]
+		for i in range(1, len(potens)):
+			indx = np.where(potens[i]>PotentialMap)
+			PotentialMap[indx] = potens[i][indx]
+
+		max_ = np.amax(np.abs(POTEN_MAP), axis=None)
+		PotentialMap = PotentialMap/max_
+		PotentialMap[np.where(PotentialMap>=0)] = 1
+
+		np.savetxt("potentialMap.csv", PotentialMap)
+
+		return PotentialMap
+
+	def _check_best_configure(self,q,q_previous,option):
 		
+		# map Q1, Q3
+		# poten map 
+		Q1 = np.genfromtxt("Q1.csv",delimiter=",")
+		Q3 = np.genfromtxt("Q3.csv",delimiter=",")
+		poten_map = np.genfromtxt("potentialMap.csv",delimiter=" ")
+
 		pi = np.pi
-		q_upper = np.array([0, pi, 820, 5*pi/6, 5*pi/6,   1.1*pi/2,  pi])
-		q_lower = np.array([0,-pi,-100,-5*pi/6,-5*pi/6,  -pi/6, -pi])
+		# q_upper = np.array([0, pi, 750, 5*pi/6, 5*pi/6,   pi/2,  pi])
+		# q_lower = np.array([0,-pi,-100,-5*pi/6,-5*pi/6,  -pi/9, -pi])
 		check_ = []
 
 		for i in range(4):
-			check_upper = (q_upper>=q[i,:]).all()
-			check_lower = (q_lower<=q[i,:]).all()
+			check_upper = (self.robot.q_upper>=q[i,:]).all()
+			check_lower = (self.robot.q_lower<=q[i,:]).all()
 			if check_lower and check_upper:
 				check_.append(q[i,:])
+
+		# print(len(check_))
 		if(len(check_) == 0):
+			# print "out of lim.",q[:,-3:]
 			return None
 
-		distance = []
-		temp_distance = 0
-		for i in range(len(check_)):
-			temp_distance = check_[i] - q_previous
-			norm_i = np.linalg.norm(temp_distance)**2
-			distance.append(norm_i)
-		# print distance
-		_idx = distance.index(min(distance))
-		return check_[_idx]
-	
+		if (option == 1):
+			distance = []
+			temp_distance = 0
+			for i in range(len(check_)):
+				temp_distance = check_[i] - q_previous
+				norm_i = np.linalg.norm(temp_distance)**2
+				distance.append(norm_i)
+			# print distance
+			_idx = distance.index(min(distance))
+			return check_[_idx]
+		
+		elif(option == 2):
+			potential_list = []
+			# print(check_)
+			for q in check_:
+				nearest_val = (Q1-q[0])**2 + (Q3-q[2])**2
+				val = nearest_val.min()
+				idx = np.where(nearest_val == val)
+				# print(q[0],q[2])
+				# print(Q1[idx[0],idx[1]],Q3[idx[0],idx[1]])
+				potential_list.append(poten_map[idx[0],idx[1]])
+
+			_idx_poten = potential_list.index(min(potential_list))
+
+			# print("\n")
+			# print(potential_list)
+			# print(check_[_idx_poten])
+			return check_[_idx_poten]
 
 #     fk = forwardKinematics()
 #     d = fk.dh_trans(np.pi/2,2,2,np.pi/2)

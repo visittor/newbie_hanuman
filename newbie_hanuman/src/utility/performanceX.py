@@ -17,8 +17,10 @@ class StopWatch(object):
 
 	def stop(self):
 		self.__stopTime = timer()
+		if self.__startTime is None:
+			return self.__elapseTime
 
-		assert self.__startTime is not None, "call stop() before start()"
+		# assert self.__startTime is not None, "call stop() before start()"
 
 		self.__elapseTime = self.__stopTime - self.__startTime
 
@@ -62,6 +64,12 @@ class Timer(object):
 		if time.time() > self.__future:
 			return True
 		return False
+
+	def is_begin(self):
+		if self.__future is None:
+			return False
+		else:
+			return True
 
 	def reset(self):
 		self.__future = None

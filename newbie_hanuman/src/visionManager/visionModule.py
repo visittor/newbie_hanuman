@@ -187,6 +187,8 @@ class KinematicModule(object):
 				# print point3D, point
 				# if name == "plane1":
 				# 	print point3D, point
+				if point3D is None:
+					continue
 				if plane.checkBoundary(point3D[0],point3D[1],point3D[2]):
 					points3D[i] = (name, point3D)
 		return points3D

@@ -27,9 +27,9 @@ class SuchartMotorCortex(NodeBase):
 									 np.pi)
 
 		joint2_min=self.getParam(self.nameSpace+"motor_cortex/joint2_min",
-									-100)
+									0)
 		joint2_max=self.getParam(self.nameSpace+"motor_cortex/joint2_max",
-									580)
+									680)
 
 		joint3_min=self.getParam(self.nameSpace+"motor_cortex/joint3_min",
 									-3*np.pi/4)
@@ -37,19 +37,19 @@ class SuchartMotorCortex(NodeBase):
 									 3*np.pi/4)
 
 		joint4_min=self.getParam(self.nameSpace+"motor_cortex/joint4_min",
-									-3*np.pi/4)
+									-25*np.pi/36)
 		joint4_max=self.getParam(self.nameSpace+"motor_cortex/joint4_max",
-									 3*np.pi/4)
+									 25*np.pi/36)
 
 		joint5_min=self.getParam(self.nameSpace+"motor_cortex/joint5_min",
-									-np.pi/6)
+									-30*np.pi/180)
 		joint5_max=self.getParam(self.nameSpace+"motor_cortex/joint5_max",
-									np.pi/2)
+									 9*np.pi/18)
 
 		joint6_min=self.getParam(self.nameSpace+"motor_cortex/joint6_min",
-									-np.pi/4)
+									-np.pi)
 		joint6_max=self.getParam(self.nameSpace+"motor_cortex/joint6_max",
-									 np.pi/4)
+									 np.pi)
 		####################################################################
 
 		joint1reg_min=self.getParam(self.nameSpace+"motor_cortex/joint1reg_min"
@@ -68,9 +68,9 @@ class SuchartMotorCortex(NodeBase):
 									,270)
 
 		joint4reg_min=self.getParam(self.nameSpace+"motor_cortex/joint4reg_min"
-									,0)
+									,10)
 		joint4reg_max=self.getParam(self.nameSpace+"motor_cortex/joint4reg_max"
-									,270)
+									,260)
 
 		joint5reg_min=self.getParam(self.nameSpace+"motor_cortex/joint5reg_min"
 									,0)
@@ -80,7 +80,7 @@ class SuchartMotorCortex(NodeBase):
 		joint6reg_min=self.getParam(self.nameSpace+"motor_cortex/joint6reg_min"
 									,0)
 		joint6reg_max=self.getParam(self.nameSpace+"motor_cortex/joint6reg_max"
-									,90)
+									,360)
 
 		self.__timeout = self.getParam(	self.nameSpace+"motor_cortex/timeout",
 										0.1)
@@ -117,8 +117,8 @@ class SuchartMotorCortex(NodeBase):
 											timeout = self.__timeout)
 
 		self.initSuchart()
-		self.setFrequency(5)
-		self.__rate = self.getParam("/spinal_cord/suchart_action_frequency",5)
+		self.setFrequency(8)
+		self.__rate = self.getParam("/spinal_cord/suchart_action_frequency",3)
 		self.__rosInitSubPubAction()
 
 	def initSuchart(self):
@@ -179,7 +179,7 @@ class SuchartMotorCortex(NodeBase):
 			rospy.loginfo("Start go to goal position ("+str(goalPosition)+").")
 			while self.__goalPosition is not None:
 				pass
-			time.sleep(1)
+			time.sleep(0.5)
 			success = False
 			while not rospy.is_shutdown():
 				if self.__suchartStatus.comunication_OK:
