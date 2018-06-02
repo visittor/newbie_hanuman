@@ -4,7 +4,7 @@ import cv2
 
 import rospy
 import roslib
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, JointState
 from std_msgs.msg import Header
 
 from cell.nodeCell import NodeBase
@@ -65,8 +65,8 @@ class OccipitalLobe(NodeBase):
 		self.__publisherMessageType = None
 		self.__visualizeFunc = lambda x,y:x
 		self.__img = None
-		# cameraID = self.getParam('/vision_manager/cameraID', 0)
-		# self.__cap = cv2.VideoCapture(cameraID)
+		self.__pantiltMsg = None
+		self.__subPantilt = False
 
 	def set_subscribeCallback(self, func):
 		self.__subscribeCallback = func
@@ -83,6 +83,7 @@ class OccipitalLobe(NodeBase):
 		self.set_subscribeCallback(module.ImageProcessingFunction)
 		self.set_publisherMessageType(module.objectsMsgType)
 		self.set_visualizeFunction(module.visualizeFunction)
+		self.__subPantilt = module.subscribePantiltTopic
 		self.rosInitNode()
 		self.rosInitPublisher( 	"/vision_manager/occipital_lobe_topic",
 								self.__publisherMessageType,
@@ -94,11 +95,19 @@ class OccipitalLobe(NodeBase):
 								 CompressedImage, 
 								 self.__receiveImage,
 								 queue_size = 1)
+		if self.__subPantilt:
+			rospy.Subscriber("/spinalcord/sternocleidomastoid_position", 
+							 JointState, 
+							 callback, 
+							 queue_size=queue_size)
 		self.setFrequencyFromParam("/vision_manager/cranial_nerve_ii_frquency")
 
 	def __receiveImage(self, msg):
 		npArray = np.fromstring(msg.data, dtype=np.uint8)
 		self.__img = cv2.imdecode(npArray, 1)
+
+	def __pantiltCallback(self, msg):
+		self.__pantiltMsg = msg
 
 	def __createCompressedImage(self, img, stamp):
 		msg = CompressedImage()
@@ -121,7 +130,15 @@ class OccipitalLobe(NodeBase):
 			img = self.__img.copy()
 			stamp = rospy.Time.now()
 			header = Header(stamp = stamp)
-			objectMsg = self.__subscribeCallback(img, header)
+
+			if self.__subPantilt:
+				objectMsg = self.__subscribeCallback(img, 
+													 header,
+													 self.__pantiltMsg)
+			else:
+				objectMsg = self.__subscribeCallback(img, 
+													 header)
+
 			self.__visualizeFunc(img, objectMsg)
 			imgMsg = self.__createCompressedImage(img, stamp)
 			self.publish(imgMsg, objectMsg)

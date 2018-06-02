@@ -13,6 +13,7 @@ class VisionModule(object):
 
 	def __init__(self):
 		self.objectsMsgType = CompressedImage
+		self.subscribePantiltTopic = False
 
 	def ImageProcessingFunction(self,img, header):
 		'''Override this function.'''
