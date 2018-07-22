@@ -141,9 +141,14 @@ class Kinematic(KinematicModule):
 		##	load intrinsic camera matrix
 		path = "/".join(PATH.split("/")[:]+["output_matrix.npz"])
 
-		intrinMat = np.load(path)["camera_matrix"]
+		# intrinMat = np.load(path)["camera_matrix"]
 		# intrinMat[0,0] /= 10
-		intrinMat[:2,:2] *= 1
+		# intrinMat[:2,:2] *= 1
+		intrinMat = np.zeros( (3,3) )
+		intrinMat[0,0] = 10.0
+		intrinMat[1,1] = 10.0
+		intrinMat[0,2] = 320.0
+		intrinMat[1,2] = 240.0
 		self.set_IntrinsicCameraMatrix(intrinMat)
 
 		#######################################
