@@ -1,0 +1,86 @@
+#!/bin/bash
+
+function CranialNerveII()
+{
+	# default value of camera id is 0
+	cameraid=0
+
+	# accept -i/--cameraid as option
+	OPTS=`getopt -o i: --long cameraid: -n ${0##*/} -- "$@"`
+
+	eval set -- "$OPTS"
+
+	# read option
+	while true; 
+	do
+		case $1 in
+			-i|--cameraid)
+				echo "Set camera id to ${2}";
+				cameraid=$2;
+				shift 2
+				;;
+			--) shift; break ;;
+		esac
+	done
+	# reset option id
+	OPTIND=1
+
+	# set ros parameter
+	COMMAND='rosparam set /vision_manager/cameraID ${cameraid}'
+	eval $COMMAND
+
+	# run node
+	rosrun newbie_hanuman CranialNerveII 
+
+}
+
+function CranialNerveIIMonitor()
+{
+	# run node
+	rosrun newbie_hanuman CranialNerveIIMonitor 
+}
+
+
+function OccipitalLobe()
+{
+	# default of path is ''
+	vision_module_path=''
+
+	# accept only -m/--module
+	OPTS=`getopt -o m: --long module: -n ${0##*/} -- "$@"`
+
+	eval set -- "$OPTS"
+
+	# read ooption
+	while true; 
+	do
+		case $1 in
+			-m|--module)
+				echo "Set vision_module_path to ${2}";
+				vision_module_path=$2
+				shift 2
+				;;
+			--) shift; break ;;
+		esac
+	done
+	# reset option id
+	OPTIND=1
+
+	# if not set -m/--module dont do anything
+	# otherwise set ros paameter
+	if [ -z $vision_module_path ]
+	then
+		:
+	else
+		COMMAND='rosparam set /vision_manager/vision_module_path ${vision_module_path}'
+		eval $COMMAND
+	fi
+
+	# run node
+	rosrun newbie_hanuman OccipitalLobe 
+
+}
+
+export -f CranialNerveII
+export -f OccipitalLobe
+export -f CranialNerveIIMonitor

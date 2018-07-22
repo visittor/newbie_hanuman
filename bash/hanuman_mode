@@ -1,0 +1,27 @@
+#!/bin/bash
+
+ROS_WS=$(realpath ${BASH_SOURCE[0]} )
+for i in {0..3}
+do
+	ROS_WS=$(dirname $ROS_WS)
+done
+
+echo export ROS_WS to ${ROS_WS}
+export ROS_WS=$ROS_WS
+
+echo source setup.bash
+source $ROS_WS/devel/setup.bash
+
+function getArg()
+{
+	arg='cranialnerveII'
+	for $i in $@
+	do
+		arg=$arg+' '+$i
+	done
+	echo $arg
+	source $arg
+}
+
+source $( dirname $(realpath ${BASH_SOURCE[0]} ) )/cranialnerveII
+# source ${ROS_WS}/devel/setup.bash
