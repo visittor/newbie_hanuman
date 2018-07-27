@@ -2,11 +2,19 @@
 
 function CranialNerveII()
 {
+	OPTIND=1
+
+	usage="Usage: CranialNerveII [option]
+	\n\t-i, --cameraid\t\tSet camera id, Defualt is 0
+	\nExample:
+	\n\tCranialNerveII -i 0\t\t\t Run CranialNerveII with camera id 0.
+	\n\tCranialNerveII --cameraid 1\t\t Run CranialNerveII with camera id 1."
+
 	# default value of camera id is 0
 	cameraid=0
 
 	# accept -i/--cameraid as option
-	OPTS=`getopt -o i: --long cameraid: -n ${0##*/} -- "$@"`
+	OPTS=`getopt -o i:h --long cameraid:,help -n ${0##*/} -- "$@"`
 
 	eval set -- "$OPTS"
 
@@ -19,6 +27,11 @@ function CranialNerveII()
 				cameraid=$2;
 				shift 2
 				;;
+			-h|--help)
+				echo -e $usage;
+				OPTIND=1;
+				return
+				;;
 			--) shift; break ;;
 		esac
 	done
@@ -29,6 +42,8 @@ function CranialNerveII()
 	COMMAND='rosparam set /vision_manager/cameraID ${cameraid}'
 	eval $COMMAND
 
+	echo -e -n "\033]0; CranialNerveII \007" 
+
 	# run node
 	rosrun newbie_hanuman CranialNerveII 
 
@@ -36,6 +51,33 @@ function CranialNerveII()
 
 function CranialNerveIIMonitor()
 {
+	OPTIND=1
+
+	usage="Usage: CranialNerveIIMonitor
+	\n\tNo options
+	\nExample:
+	\n\tCranialNerveIIMonitor\t\t\t Run CranialNerveIIMonitor."
+
+	OPTS=`getopt -o h --long help -n ${0##*/} -- "$@"`
+
+	eval set -- "$OPTS"
+
+	# read option
+	while true; 
+	do
+		case $1 in
+			-h|--help)
+				echo -e $usage;
+				OPTIND=1;
+				return
+				;;
+			--) shift; break ;;
+		esac
+	done
+	OPTIND=1
+
+	echo -e -n "\033]0; CranialNerveIIMonitor \007" 
+	
 	# run node
 	rosrun newbie_hanuman CranialNerveIIMonitor 
 }
@@ -43,11 +85,18 @@ function CranialNerveIIMonitor()
 
 function OccipitalLobe()
 {
+	OPTIND=1
+
+	usage="Usage: OccipitalLobe [options]
+	\n\t-m, --module\t\t File path for vision module used in OccipitalLobe and KinematicLobe.
+	\nExample:
+	\n\tOccipitalLobe -m /some/file/path\t\t\t Run OccipitalLobe."
+
 	# default of path is ''
 	vision_module_path=''
 
 	# accept only -m/--module
-	OPTS=`getopt -o m: --long module: -n ${0##*/} -- "$@"`
+	OPTS=`getopt -o m:h --long module:,help -n ${0##*/} -- "$@"`
 
 	eval set -- "$OPTS"
 
@@ -59,6 +108,11 @@ function OccipitalLobe()
 				echo "Set vision_module_path to ${2}";
 				vision_module_path=$2
 				shift 2
+				;;
+			-h|--help)
+				echo -e $usage;
+				OPTIND=1;
+				return;
 				;;
 			--) shift; break ;;
 		esac
@@ -75,6 +129,8 @@ function OccipitalLobe()
 		COMMAND='rosparam set /vision_manager/vision_module_path ${vision_module_path}'
 		eval $COMMAND
 	fi
+
+	echo -e -n "\033]0; OccipitalLobe \007" 
 
 	# run node
 	rosrun newbie_hanuman OccipitalLobe 
