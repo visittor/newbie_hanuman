@@ -28,8 +28,8 @@ def read_data(serial):
 			while serial.inWaiting():
 				PACKAGE.append(ord(serial.read()))
 			if len(PACKAGE) > 0:
-				# rospy.logdebug("RECIEVE<< "+str(PACKAGE))
-				rospy.logdebug(str(len(PACKAGE)))
+				rospy.logdebug("RECIEVE<< "+str(PACKAGE))
+				# rospy.logdebug(str(len(PACKAGE)))
 	except Exception as e:
 		rospy.logerr("cannot recieve data from serial port"+str(e))
 	finally:
