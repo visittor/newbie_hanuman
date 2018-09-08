@@ -65,7 +65,7 @@ class MotorCortex(NodeBase):
 		self.__lastResetIntegration = rospy.Time.now()
 		self.__lastFallDown = rospy.Time.now()
 
-		self.__initLocomot()
+		self.__initLocomotion()
 		self.__rosInitSubPubSer()
 		self.setFrequency(5)
 
