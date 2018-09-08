@@ -502,7 +502,7 @@ class HanumanInterface(object):
 		return True
 
 	def getHanumanStatus(self):
-		self.spinal_cord.read_AllLowLevelData()
+		self.spinal_cord.read_AllLowLevelData(timeout = self.__timeout)
 		statusPackage = self.spinal_cord.get_statusPackage()
 		if statusPackage is None:
 			return
