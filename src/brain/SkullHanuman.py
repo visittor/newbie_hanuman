@@ -42,6 +42,7 @@ class HanumanSkull(NodeBase):
 def main():
 	fileName = rospy.get_param("/brain/brain_module_path", '')
 	if fileName == '':
+		rospy.logwarn("NO BRAIN!!")
 		module = FSMBrainState("Default")
 	else:
 		print "get module"
