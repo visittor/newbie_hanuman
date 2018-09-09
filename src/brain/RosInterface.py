@@ -7,91 +7,106 @@ from Queue import PriorityQueue, Queue
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 
-class RosInterface(object):
+class Publisher(object):
 
-	class __Publisher(object):
+	def __init__(self, publisher, msgType):
+		self.__publisher = publisher
+		self.__msgType = msgType
+		self.__msg = None
 
-		def __init__(self, publisher, msgType):
-			self.__publisher = publisher
-			self.__msgType = msgType
-			self.__msg = None
+	def setCommand(self, *arg, **kwarg):
+		self.__msg = self.__msgType(*arg, **kwarg)
 
-		def setCommand(self, *arg, **kwarg):
-			self.__msg = self.__msgType(*arg, **kwarg)
+	def doCurrentCommand(self):
+		self.__publisher.publish(self.__msg)
 
-		def doCurrentCommand(self):
-			self.__publisher.publish(self.__msg)
+	def doThisCommand(self, msg, *arg, **kwarg):
+		self.setMsg(*arg, **kwarg)
+		self.sendCurrentMsg()
 
-		def doThisCommand(self, msg, *arg, **kwarg):
-			self.setMsg(*arg, **kwarg)
-			self.sendCurrentMsg()
+class Service( rospy.ServiceProxy ):
+	'''
+	Proxy for ros service
+	'''
+	def __init__( self, serviceName,  serviceClass, ):
+		super(Service, self).__init__(serviceName, serviceClass)
 
-	class __ActionClient(object):
+		self.__name = serviceName
 
-		def __init__(self, client, actionType, actionGoal):
-			self.__client = client
-			self.__actType = actionType
-			self.__actGoal = actionGoal
+	def __call__( self, *args, **kwargs ):
+		try:
+			super(Service, self).__call__( *args, **kwargs )
+		except rospy.ServiceException as exc:
+			rospy.logwarn("Service did not process request: " + str(exc))
 
-			self.__feedBack = None
+class ActionClient(object):
+
+	def __init__(self, client, actionType, actionGoal):
+		self.__client = client
+		self.__actType = actionType
+		self.__actGoal = actionGoal
+
+		self.__feedBack = None
+		self.__result = None
+
+		self.__actFinish = True
+		self.__actSuccess = None
+		self.__inProgress = False
+
+	def __feedBackCB(self, feed_back):
+		self.__feedBack = feed_back
+		if self.__client.get_state() == GoalStatus.LOST:
+			self.cancelGoal()
+			self.__actFinish = True
+			self.__actSuccess = False
+			self.__inProgress = False
 			self.__result = None
 
-			self.__actFinish = True
-			self.__actSuccess = None
-			self.__inProgress = False
+	def __doneCB(self, goalStatus, result):
+		if goalStatus == GoalStatus.SUCCEEDED:
+			self.__actSuccess = True
+		else:
+			self.__actSuccess = False
 
-		def __feedBackCB(self, feed_back):
-			self.__feedBack = feed_back
-			if self.__client.get_state() == GoalStatus.LOST:
-				self.cancelGoal()
-				self.__actFinish = True
-				self.__actSuccess = False
-				self.__inProgress = False
-				self.__result = None
+		self.__actFinish = True
+		self.__inProgress = False
+		self.__result = result
 
-		def __doneCB(self, goalStatus, result):
-			if goalStatus == GoalStatus.SUCCEEDED:
-				self.__actSuccess = True
-			else:
-				self.__actSuccess = False
+	def setGoal(self, **kwarg):
+		goalMsg = self.__actGoal(**kwarg)
+		self.__inProgress = True
+		self.__actFinish = False
+		self.__actSuccess = None
+		self.__client.send_goal(goalMsg, feedback_cb = self.__feedBackCB,
+										done_cb = self.__doneCB)
 
-			self.__actFinish = True
-			self.__inProgress = False
-			self.__result = result
+	def cancelGoal(self):
+		self.__client.cancel_goal()
 
-		def setGoal(self, **kwarg):
-			goalMsg = self.__actGoal(**kwarg)
-			self.__inProgress = True
-			self.__actFinish = False
-			self.__actSuccess = None
-			self.__client.send_goal(goalMsg, feedback_cb = self.__feedBackCB,
-											done_cb = self.__doneCB)
+	def waitForServer(self):
+		self.__client.wait_for_server()
 
-		def cancelGoal(self):
-			self.__client.cancel_goal()
+	@property
+	def feedBack(self):
+		return self.__feedBack
 
-		def waitForServer(self):
-			self.__client.wait_for_server()
+	@property
+	def result(self):
+		return self.__result
 
-		@property
-		def feedBack(self):
-			return self.__feedBack
+	@property
+	def isFinish(self):
+		return self.__actFinish
 
-		@property
-		def result(self):
-			return self.__result
+	@property
+	def isSuccess(self):
+		return slf.__actSuccess
 
-		@property
-		def isFinish(self):
-			return self.__actFinish
+	@property
+	def isInProgress(self):
+		return self.__inProgress
 
-		@property
-		def isSuccess(self):
-			return slf.__actSuccess
-
-		@property
-		def isInProgress(self):
-			return self.__inProgress
+class RosInterface(object):
 
 	def __init__(self):
 		self.__publisherInterface = []
@@ -150,7 +165,7 @@ class RosInterface(object):
 		assert funcName not in self.__serviceInterface
 		assert funcName not in self.__varName, varName+" already exist please choose a new name."
 
-		setattr(self, funcName, rospy.ServiceProxy(serviceName, serviceClass))
+		setattr(self, funcName, Service( serviceName, serviceClass ) )
 		self.__serviceInterface.append(funcName)
 		self.__varName.append(funcName)
 
@@ -159,7 +174,7 @@ class RosInterface(object):
 		assert varName not in self.__varName, varName+" already exist please choose a new name."
 
 		pub = rospy.Publisher(topic, msg, queue_size = queue_size)
-		setattr(self, varName, self.__Publisher(pub, msg) )
+		setattr(self, varName, Publisher(pub, msg) )
 		self.__publisherInterface.append(varName)
 		self.__varName.append(varName)
 
@@ -167,7 +182,16 @@ class RosInterface(object):
 		assert varName not in self.__actionInterface
 		assert varName not in self.__varName, varName+" already exist please choose a new name."
 		client = actionlib.SimpleActionClient(ns, actionType)
-		action = self.__ActionClient(client, actionType, goalType)
+		action = ActionClient(client, actionType, goalType)
 		setattr(self, varName, action)
 		self.__varName.append(varName)
 		self.__actionInterface.append(varName)
+
+	def waitAllInterface( self, timeout ):
+		'''
+		Wait until all interface is ready
+		argument:
+			timeout	:	timeout
+		'''
+		## wait for service
+		[  getattr(self,service).wait_for_service( timeout ) for service in self.__serviceInterface ]
