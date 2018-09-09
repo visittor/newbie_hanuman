@@ -24,6 +24,8 @@ class HanumanRosInterface(RosInterface):
 									HanumanStatusMsg, 
 									"robotStatus")
 
+		self.waitAllInterface( 1 )
+
 	def setKinematicInterface(self, msgType):
 		self.interfaceWithPublisher("/vision_manager/kinematic_topic",
 									msgType,
