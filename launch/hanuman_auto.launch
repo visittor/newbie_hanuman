@@ -8,8 +8,14 @@
 	<arg name="sterno_pan_motor" default= "mx28"/>
 	<arg name="sterno_tilt_motor" default= "mx28"/>
 	<arg name="sterno_baurdrate" default= "115200"/>
+	<arg name="motorcortex_comport" default= "/dev/ttyACM0" />
+	<arg name="pantilt_comport" default= "/dev/ttyUSB0" />
+	<arg name="brain_path" default= "" />
 
 	<!-- Set Parameters -->
+	<param name="/brain/brain_module_path" value="$( arg brain_path)" />
+	<param name="/motor_cortex/comport" value="$( arg motorcortex_comport)"/>
+	<param name="/spinalcord/head_comport" value="$( arg pantilt_comport)" />
 	<param name="/global_verbosity" value="$( arg global_verbosity )"/>
 	<param name="/global_frequency" value="$( arg global_frequency )"/>
 	<param name="/vision_manager/cameraID" value="$( arg camera_device )"/>
@@ -26,5 +32,6 @@
 	<node pkg="newbie_hanuman" type="PanTiltPlanner" name="PanTiltPlanner"/>"
 	<node pkg="newbie_hanuman" type="Sternocleidomastoid" name="Sternocleidomastoid" />
 	<node pkg="newbie_hanuman" type="MotorCortex" name="MotorCortex"/>
+	<node pkg="newbie_hanuman" type="HanumanFrontalCortex" name="FrontalCortex" />
 	
 </launch>
